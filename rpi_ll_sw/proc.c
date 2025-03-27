@@ -19,34 +19,59 @@
 #define PROC_UTIME_SSCANF_COUNT 17
 
 proc_ctx_t *proc_ctxs = NULL;
+utime_ctx_t *utime_ctxs = NULL;
+
+uint32_t utime_count = 0;
 uint32_t proc_count = 0;
 uint32_t proc_chunk_count = 0;
 
 static inline int get_proc_utime(proc_ctx_t *proc_ctx, char *line)
 {
-    int pid;
-    char comm[256];
-    char state;
-    int ppid;
-    int pgrp;
-    int session;
-    int tty_nr;
-    int tpgid;
-    unsigned int flags;
-    unsigned long minflt;
-    unsigned long cminflt;
-    unsigned long majflt;
-    unsigned long cmajflt;
-    unsigned long utime;
-    unsigned long stime;
-    
-    int result = sscanf(line,
-                        "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu", // Format string
-                        &pid, comm, &state, &ppid, &pgrp, &session, &tty_nr, &tpgid, &flags,
-                        &minflt, &cminflt, &majflt, &cmajflt, &utime, &stime);
-    proc_ctx->utime_new = utime + stime;
+  int pid;
+  char comm[256];
+  char state;
+  int ppid;
+  int pgrp;
+  int session;
+  int tty_nr;
+  int tpgid;
+  unsigned int flags;
+  unsigned long minflt;
+  unsigned long cminflt;
+  unsigned long majflt;
+  unsigned long cmajflt;
+  unsigned long utime;
+  unsigned long stime;
 
-    return result;
+  int result = sscanf(line,
+      "%d %s %c %d %d %d %d %d %u %lu %lu %lu %lu %lu %lu", // Format string
+      &pid, comm, &state, &ppid, &pgrp, &session, &tty_nr, &tpgid, &flags,
+      &minflt, &cminflt, &majflt, &cmajflt, &utime, &stime);
+  proc_ctx->utime_new = utime + stime;
+
+  return result;
+}
+
+static inline void save_old_utime(void) {
+  utime_ctxs = (utime_ctx_t *)reallocarray(utime_ctxs, proc_count, sizeof(utime_ctx_t));
+
+  for(int i=0; i<proc_count; i++) {
+    utime_ctxs[i].pid = proc_ctxs[i].proc_id;
+    utime_ctxs[i].utime = proc_ctxs[i].utime_new;
+  }
+
+  utime_count = proc_count;
+}
+
+static inline uint64_t get_old_utime(int pid)
+{
+  for (int i=0; i<utime_count; i++) {
+    if (utime_ctxs[i].pid == pid) {
+      return utime_ctxs[i].utime;
+    }
+  }
+
+  return 0;
 }
 
 int read_user_processes(void) {
@@ -57,6 +82,8 @@ int read_user_processes(void) {
     perror("opendir:");
     return -1;
   }
+
+  save_old_utime();
 
   uint32_t local_proc_count = 0;
   while ((ent = readdir(rdir)) != NULL) {
@@ -216,8 +243,6 @@ int get_proc_info(const char *status_path, const char *stat_path, proc_ctx_t *pr
     return -1;
   }
 
-  proc_ctx->utime_old = proc_ctx->utime_new;
-
   FILE *stat_fd = fopen(stat_path, "r");
 
   if (stat_fd == NULL) {
@@ -226,7 +251,9 @@ int get_proc_info(const char *status_path, const char *stat_path, proc_ctx_t *pr
   }
 
   getline(&line, &len, stat_fd);
-  int ret = get_proc_utime(proc_ctx, line);
+
+  get_proc_utime(proc_ctx, line);
+  proc_ctx->utime_old = get_old_utime(proc_ctx->proc_id);;
 
   fclose(stat_fd);
 
@@ -253,7 +280,7 @@ int print_proc_ctx(proc_ctx_t proc_ctx, FILE *fd) {
   fprintf(fd, "Swap: %u kB\n", proc_ctx.vm_swap_kB);
   fprintf(fd, "Threads: %u\n", proc_ctx.threads);
   fprintf(fd, "Max_cpus: %u\n", proc_ctx.max_cpus);
-  //fprintf(fd, "Utime: %lu\n", proc_ctx.utime_new - proc_ctx.utime_old);
+  fprintf(fd, "Utime: %lu\n", proc_ctx.utime_new - proc_ctx.utime_old);
 
   fprintf(fd, "\n");
 
