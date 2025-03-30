@@ -1,5 +1,9 @@
 #pragma once
 
+#define GET_CPU_TIME(x) x.user_norm + x.user_nice + \
+                        x.kernel_proc + x.idle + \
+                        x.iowait + x.irq + x.soft_irq 
+
 #include <stdint.h>
 
 typedef struct{
@@ -18,6 +22,8 @@ typedef struct{
   uint32_t core_num;
   core_ctx_t *core_ctxs;
 } cpu_ctx_t;
+
+extern cpu_ctx_t cpu_ctx_glob;
 
 int update_cpu_ctx(void);
 int init_cpu_ctx(void);

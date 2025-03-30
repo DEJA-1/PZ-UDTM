@@ -34,6 +34,9 @@ typedef struct
   uint64_t utime;
 } utime_ctx_t;
 
+extern proc_ctx_t *proc_ctxs;
+extern uint32_t proc_count;
+
 int read_user_processes(void);
 int get_proc_info(const char *status_path, const char *stat_path, proc_ctx_t *proc_ctx, int pid);
 int print_proc_ctx(proc_ctx_t proc_ctx, FILE *fd);
