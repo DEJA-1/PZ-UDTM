@@ -1,0 +1,3 @@
+#rust code for git ignore
+target/
+Cargo.lock
