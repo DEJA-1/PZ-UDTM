@@ -1,8 +1,9 @@
 #include <stdint.h>
 #include <signal.h>
+#include <stdio.h>
 
 #include "dispatcher.h"
-#include "gpio.c"
+#include "gpio.h"
 
 int kill_pid(int pid)
 {

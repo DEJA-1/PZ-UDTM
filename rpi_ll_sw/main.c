@@ -16,6 +16,7 @@
 #include "proc.h"
 #include "ram.h"
 #include "cpu.h"
+#include "temp.h"
 #include "dispatcher.h"
 
 pthread_t resources_thread;
@@ -23,6 +24,7 @@ pthread_t dispatcher_thread;
 
 #define MS_TO_US(x) (x*1000)
 
+float ext_tmp;
 const uint32_t key = KEY;
 
 const int get_listener_socket(void) {
@@ -85,7 +87,7 @@ void * dispatcher_task(void *params)
 
   uint8_t recv_data[8];
 
-  printf("KEy accepted\n");
+  printf("key accepted\n");
 
   while(0xDEADBEEF) {
     recv(client_sock, recv_data, 8, 0);
@@ -103,6 +105,7 @@ void * resources_task(void *params)
     read_ram_usage();
     read_user_processes();
     update_cpu_ctx();
+    read_ext_temp();
 
     monitor_procs();
 
@@ -133,9 +136,19 @@ void * resources_task(void *params)
     print_procs(proc);
     fclose(proc);
 
+    FILE *temp = fopen("/tmp/ext_temp_tmp", "w+");
+    if (temp == NULL) {
+      perror("fopen proc_tmp:");
+      break;
+    }
+
+    save_ext_temp(temp);
+    fclose(temp);
+
     rename("/tmp/ram_tmp", "/tmp/ram");
     rename("/tmp/cpu_tmp", "/tmp/cpu");
     rename("/tmp/proc_tmp", "/tmp/proc");
+    rename("/tmp/ext_temp_tmp", "/tmp/ext_temp");
 
     usleep(MS_TO_US(MONITOR_TIMEOUT_MS));
   }
@@ -145,6 +158,11 @@ void * resources_task(void *params)
 
 int main(void)
 {
+  if (init_temp_sensor() != 0) {
+    fprintf(stderr, "Temp sensor initalisation failed\n");
+    return -1;
+  }
+
   pthread_create(&resources_thread, NULL, resources_task, NULL);
   pthread_create(&dispatcher_thread, NULL, dispatcher_task, NULL);
 
