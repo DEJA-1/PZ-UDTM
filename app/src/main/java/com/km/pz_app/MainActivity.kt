@@ -23,7 +23,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val viewModel: HomeViewModel by viewModels()
-
         setContent {
             PZAPPTheme {
                 val state = viewModel.state.collectAsStateWithLifecycle().value
