@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.km.pz_app.data.repository.FakeSystemRepository
 import com.km.pz_app.domain.model.CpuResponse
 import com.km.pz_app.domain.model.CpuStats
+import com.km.pz_app.domain.model.MemoryResponse
 import com.km.pz_app.domain.repository.ISystemRepository
 import com.km.pz_app.presentation.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -49,8 +50,6 @@ class HomeViewModel @Inject constructor(
     private fun startDataRefreshLoop() {
         viewModelScope.launch {
             while (true) {
-                Log.d("test", "fetching data...")
-                Log.d("test", "currentState: ${_state.value}")
                 fetchData(showLoading = initialInvoke)
                 delay(duration = if (initialInvoke) 0.seconds else REFRESH_DATA_INTERVAL)
                 initialInvoke = false
@@ -95,9 +94,14 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 repository.getMemoryStatus()
-            }.onSuccess {
+            }.onSuccess { memoryResponse ->
+                val (percent, gbPair) = mapMemoryState(Resource.Success(memoryResponse))
                 updateState {
-                    copy(memory = Resource.Success(data = it))
+                    copy(
+                        memory = Resource.Success(data = memoryResponse),
+                        usedRamPercent = percent,
+                        usedRamGb = gbPair
+                    )
                 }
             }.onFailure {
                 updateState {
@@ -139,12 +143,32 @@ class HomeViewModel @Inject constructor(
 
         previousCpuStats = current
 
+        val (percent, temp) = mapCpuState(newCpu, calculatedPercent)
+
         updateState {
             copy(
                 cpu = Resource.Success(data = newCpu),
-                cpuPercentUsed = calculatedPercent
+                cpuPercentUsed = percent,
+                cpuTemperature = temp
             )
         }
+    }
+
+    private fun mapCpuState(cpu: CpuResponse, percent: Float?): Pair<Float?, Float?> {
+        val temp = cpu.cpuTemperature
+        return percent to temp
+    }
+
+    private fun mapMemoryState(memory: Resource<MemoryResponse>): Pair<Float?, Pair<Float, Float>?> {
+        val percent = (memory as? Resource.Success)?.data?.let {
+            100f * (it.total - it.available) / it.total
+        }
+        val gbPair = (memory as? Resource.Success)?.data?.let {
+            val used = (it.total - it.available).toFloat() / 1024 / 1024
+            val total = it.total.toFloat() / 1024 / 1024
+            used to total
+        }
+        return percent to gbPair
     }
 
     private fun calculateCpuUsagePercentage(

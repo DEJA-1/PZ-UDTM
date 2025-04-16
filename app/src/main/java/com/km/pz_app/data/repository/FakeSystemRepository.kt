@@ -9,6 +9,7 @@ import com.km.pz_app.domain.model.ProcessResponse
 import com.km.pz_app.domain.repository.ISystemRepository
 import kotlinx.coroutines.delay
 import javax.inject.Inject
+import kotlin.random.Random
 
 class FakeSystemRepository @Inject constructor() : ISystemRepository {
 
@@ -47,16 +48,21 @@ class FakeSystemRepository @Inject constructor() : ISystemRepository {
     }
 
 
+    private var totalRam = 3882924L // 3.7 GB
+    private var currentUsedRam = 1500000L // Start: ~1.5 GB
+
     override suspend fun getMemoryStatus(): MemoryResponse {
         delay(300)
 
-        val total = 3882924L
-        val used = 500000L + tick * 1000
-        val available = total - used
-        val free = available / 2
+        // Losowy przyrost/zmniejszenie zużycia: od -100 do +200 MB
+        val usageDelta = (listOf(-200_000, -100_000, 0, 100_000, 200_000)).random()
+        currentUsedRam = (currentUsedRam + usageDelta).coerceIn(500_000L, totalRam - 200_000L)
+
+        val available = totalRam - currentUsedRam
+        val free = (available * Random.nextDouble(0.3, 0.6)).toLong()
 
         return MemoryResponse(
-            total = total,
+            total = totalRam,
             available = available,
             free = free
         )

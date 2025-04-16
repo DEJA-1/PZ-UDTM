@@ -7,10 +7,13 @@ import com.km.pz_app.presentation.utils.Resource
 import kotlinx.collections.immutable.persistentListOf
 
 data class HomeState(
-    val cpu: Resource<CpuResponse>,
-    val memory: Resource<MemoryResponse>,
-    val processes: Resource<ProcessResponse>,
-    val cpuPercentUsed: Float? = null
+    private val cpu: Resource<CpuResponse>,
+    private val memory: Resource<MemoryResponse>,
+    private val processes: Resource<ProcessResponse>,
+    val cpuPercentUsed: Float? = null,
+    val cpuTemperature: Float? = null,
+    val usedRamPercent: Float? = null,
+    val usedRamGb: Pair<Float, Float>? = null
 ) {
     private val resources = persistentListOf(cpu, memory, processes)
     val isLoading = resources.any { it is Resource.Loading }

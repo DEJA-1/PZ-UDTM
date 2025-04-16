@@ -3,8 +3,10 @@ package com.km.pz_app.presentation.home
 import androidx.annotation.ContentView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
@@ -46,9 +48,24 @@ private fun Content(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
+        state.cpuTemperature?.let {
+            Text(text = "CPU Temp: ${"%.1f".format(it)}°C")
+        }
+        Spacer(modifier = Modifier.height(height = 8.dp))
         state.cpuPercentUsed?.let {
             CpuUsageBar(usagePercent = it)
         } ?: Text("CPU Usage: --%")
+        Spacer(modifier = Modifier.height(height = 8.dp))
+        state.usedRamGb?.let { (used, total) ->
+            Text(text = "Memory: ${"%.1f".format(used)} GB / ${"%.1f".format(total)} GB")
+        }
+        Spacer(modifier = Modifier.height(height = 8.dp))
+        state.usedRamPercent?.let {
+            LinearProgressIndicator(
+                progress = it / 100f,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 
