@@ -75,4 +75,5 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.androidx.ui.text.google.fonts)
 }
