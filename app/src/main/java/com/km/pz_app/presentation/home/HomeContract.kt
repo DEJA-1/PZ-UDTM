@@ -10,6 +10,7 @@ data class HomeState(
     val cpu: Resource<CpuResponse>,
     val memory: Resource<MemoryResponse>,
     val processes: Resource<ProcessResponse>,
+    val cpuPercentUsed: Float? = null
 ) {
     private val resources = persistentListOf(cpu, memory, processes)
     val isLoading = resources.any { it is Resource.Loading }

@@ -3,6 +3,9 @@ package com.km.pz_app.presentation.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.km.pz_app.data.repository.FakeSystemRepository
+import com.km.pz_app.domain.model.CpuResponse
+import com.km.pz_app.domain.model.CpuStats
 import com.km.pz_app.domain.repository.ISystemRepository
 import com.km.pz_app.presentation.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +22,7 @@ private val REFRESH_DATA_INTERVAL = 5.seconds
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: ISystemRepository
+    private val repository: FakeSystemRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -31,6 +34,7 @@ class HomeViewModel @Inject constructor(
     )
     val state = _state.asStateFlow()
     private var initialInvoke = true
+    private var previousCpuStats: CpuStats? = null
 
     init {
         startDataRefreshLoop()
@@ -45,6 +49,8 @@ class HomeViewModel @Inject constructor(
     private fun startDataRefreshLoop() {
         viewModelScope.launch {
             while (true) {
+                Log.d("test", "fetching data...")
+                Log.d("test", "currentState: ${_state.value}")
                 fetchData(showLoading = initialInvoke)
                 delay(duration = if (initialInvoke) 0.seconds else REFRESH_DATA_INTERVAL)
                 initialInvoke = false
@@ -68,10 +74,8 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 repository.getCpuStatus()
-            }.onSuccess {
-                updateState {
-                    copy(cpu = Resource.Success(data = it))
-                }
+            }.onSuccess { newCpu ->
+                calculateAndUpdateCpu(newCpu)
             }.onFailure {
                 updateState {
                     copy(cpu = Resource.Error(message = "Error: ${it.message}"))
@@ -127,7 +131,44 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun calculateAndUpdateCpu(newCpu: CpuResponse) {
+        val current = newCpu.cpuUsage.full
+        val calculatedPercent = previousCpuStats?.let { previous ->
+            calculateCpuUsagePercentage(previous, current)
+        }
+
+        previousCpuStats = current
+
+        updateState {
+            copy(
+                cpu = Resource.Success(data = newCpu),
+                cpuPercentUsed = calculatedPercent
+            )
+        }
+    }
+
+    private fun calculateCpuUsagePercentage(
+        previous: CpuStats,
+        current: CpuStats
+    ): Float {
+        val prevActive =
+            previous.userNorm + previous.userNice + previous.kernel + previous.ioWait + previous.irq + previous.softIrq
+        val prevTotal = prevActive + previous.idle
+
+        val currActive =
+            current.userNorm + current.userNice + current.kernel + current.ioWait + current.irq + current.softIrq
+        val currTotal = currActive + current.idle
+
+        val totalDelta = currTotal - prevTotal
+        val activeDelta = currActive - prevActive
+
+        return if (totalDelta > 0) {
+            (activeDelta.toFloat() / totalDelta.toFloat()) * 100f
+        } else 0f
+    }
+
     private fun updateState(update: HomeState.() -> HomeState) {
         _state.update { it.update() }
     }
+
 }
