@@ -9,7 +9,7 @@ import kotlinx.collections.immutable.persistentListOf
 data class HomeState(
     private val cpu: Resource<CpuResponse>,
     private val memory: Resource<MemoryResponse>,
-    private val processes: Resource<ProcessResponse>,
+    val processes: Resource<ProcessResponse>,
     val cpuPercentUsed: Float? = null,
     val cpuTemperature: Float? = null,
     val usedRamPercent: Float? = null,

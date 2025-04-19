@@ -17,6 +17,8 @@ class FakeSystemRepository @Inject constructor() : ISystemRepository {
     private var previousUser = 100L
     private var previousKernel = 200L
     private var previousIdle = 3000L
+    private var totalRam = 3882924L
+    private var currentUsedRam = 1500000L
 
     override suspend fun getCpuStatus(): CpuResponse {
         delay(300)
@@ -47,14 +49,9 @@ class FakeSystemRepository @Inject constructor() : ISystemRepository {
         )
     }
 
-
-    private var totalRam = 3882924L // 3.7 GB
-    private var currentUsedRam = 1500000L // Start: ~1.5 GB
-
     override suspend fun getMemoryStatus(): MemoryResponse {
         delay(300)
 
-        // Losowy przyrost/zmniejszenie zużycia: od -100 do +200 MB
         val usageDelta = (listOf(-200_000, -100_000, 0, 100_000, 200_000)).random()
         currentUsedRam = (currentUsedRam + usageDelta).coerceIn(500_000L, totalRam - 200_000L)
 
@@ -70,22 +67,27 @@ class FakeSystemRepository @Inject constructor() : ISystemRepository {
 
     override suspend fun getProcesses(): ProcessResponse {
         delay(400)
-        return ProcessResponse(
-            processes = listOf(
-                ProcessInfo(
-                    pid = 1,
-                    name = "systemd",
-                    stateCode = "S",
-                    stateDescription = "sleeping",
-                    user = "0",
-                    group = "0",
-                    memoryRss = (88000 + tick * 100).toLong(),
-                    memoryVirt = 150000,
-                    swap = 0,
-                    threads = 2,
-                    uTime = (tick * 10).toLong()
-                )
+
+        val states = listOf("sleeping", "running", "zombie", "interrupt")
+        val names = listOf("systemd", "kworker", "irq/51", "node")
+
+        val processes = (1..4).map {
+            ProcessInfo(
+                pid = it,
+                name = names.random(),
+                stateCode = "S",
+                stateDescription = states.random(),
+                user = "1000",
+                group = "1000",
+                memoryRss = (80_000..160_000).random().toLong(),
+                memoryVirt = (200_000..300_000).random().toLong(),
+                swap = 0,
+                threads = (1..6).random(),
+                uTime = (tick * (1..30).random()).toLong()
             )
-        )
+        }
+
+        return ProcessResponse(processes = processes)
     }
+
 }

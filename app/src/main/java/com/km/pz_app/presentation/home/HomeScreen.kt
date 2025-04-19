@@ -1,10 +1,7 @@
 package com.km.pz_app.presentation.home
 
-import android.content.res.Resources.Theme
-import androidx.annotation.ContentView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Badge
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -25,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -34,7 +31,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.loader.content.Loader
 import com.km.pz_app.domain.model.CpuResponse
 import com.km.pz_app.domain.model.CpuStats
 import com.km.pz_app.domain.model.CpuUsage
@@ -44,11 +40,15 @@ import com.km.pz_app.domain.model.ProcessResponse
 import com.km.pz_app.presentation.utils.Resource
 import com.km.pz_app.ui.theme.PZAPPTheme
 import com.km.pz_app.ui.theme.background
+import com.km.pz_app.ui.theme.backgroundBadgeDisabled
+import com.km.pz_app.ui.theme.backgroundBadgeEnabled
 import com.km.pz_app.ui.theme.backgroundSecondary
 import com.km.pz_app.ui.theme.backgroundTertiary
 import com.km.pz_app.ui.theme.primary
 import com.km.pz_app.ui.theme.text
 import com.km.pz_app.ui.theme.textWeak
+import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.toPersistentList
 
 @Composable
 fun HomeScreen(
@@ -81,66 +81,130 @@ private fun Content(
             .fillMaxSize()
             .verticalScroll(state = rememberScrollState())
     ) {
-        TemperatureGauge(
-            temperature = 43.4f,
-            modifier = Modifier.fillMaxWidth()
-        )
+        state.cpuTemperature?.let {
+            TemperatureGauge(
+                temperature = it,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         Row(
             horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            RAMTile(modifier = Modifier.weight(weight = 1f))
-            CPUTile(modifier = Modifier.weight(weight = 1f))
+            RAMTile(
+                usedRamPercent = state.usedRamPercent,
+                usedRamGb = state.usedRamGb,
+                modifier = Modifier.weight(1f)
+            )
+            CPUTile(
+                systemPercent = state.cpuPercentUsed,
+                modifier = Modifier.weight(1f)
+            )
         }
-//        state.cpuTemperature?.let {
-//            Text(text = "CPU Temp: ${"%.1f".format(it)}°C")
-//        }
-//        Spacer(modifier = Modifier.height(height = 8.dp))
-//        state.cpuPercentUsed?.let {
-//            CpuUsageBar(usagePercent = it)
-//        } ?: Text("CPU Usage: --%")
-//        Spacer(modifier = Modifier.height(height = 8.dp))
-//        state.usedRamGb?.let { (used, total) ->
-//            Text(text = "Memory: ${"%.1f".format(used)} GB / ${"%.1f".format(total)} GB")
-//        }
-//        Spacer(modifier = Modifier.height(height = 8.dp))
-//        state.usedRamPercent?.let {
-//            LinearProgressIndicator(
-//                progress = it / 100f,
-//                modifier = Modifier.fillMaxWidth()
-//            )
-//        }
+        state.processes.getResultOrNull()?.let {
+            ProcessesTile(processes = it.processes.toPersistentList())
+        }
     }
 }
 
 @Composable
-private fun CPUTile(modifier: Modifier = Modifier) {
+private fun ProcessesTile(processes: PersistentList<ProcessInfo>) {
+    Tile(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(space = 16.dp),
+            modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp)
+        ) {
+            processes.forEach {
+                ProcessInfo(info = it)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProcessInfo(info: ProcessInfo, cpuPercent: Float? = null) {
+    val (badgeColor, badgeTextColor) = info.getBadgeColorAndText()
+
+    val memoryMB = info.memoryRss.toFloat() / 1024f
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .fillMaxSize()
+    ) {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f, fill = false)
+        ) {
+            Text(
+                text = info.name,
+                color = text,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Spacer(modifier = Modifier.height(height = 4.dp))
+            Text(
+                text = "${memoryMB.format(1)} MB",
+                color = textWeak,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+
+        Badge(
+            content = {
+                Text(
+                    text = info.stateDescription,
+                    color = badgeTextColor,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(8.dp)
+                )
+            },
+            containerColor = badgeColor
+        )
+    }
+}
+
+
+@Composable
+private fun CPUTile(
+    systemPercent: Float?,
+    modifier: Modifier = Modifier
+) {
     Tile(modifier = modifier) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(space = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .padding(
-                    horizontal = 16.dp,
-                    vertical = 32.dp
-                )
+                .padding(horizontal = 16.dp, vertical = 32.dp)
                 .fillMaxWidth()
         ) {
             Text(
                 text = "CPU usage",
                 color = text,
+                fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodyLarge
             )
             Spacer(modifier = Modifier.height(height = 4.dp))
-            CPUUsageRow(title = "Sys")
-            CPUUsageRow(title = "Idle")
-            CPUUsageRow(title = "???")
+            CPUUsageRow(
+                title = "Sys",
+                percent = systemPercent,
+            )
+            CPUUsageRow(
+                title = "Idle",
+                percent = systemPercent?.let { 100f - it },
+            )
         }
     }
 }
 
+
 @Composable
 private fun CPUUsageRow(
     title: String,
+    percent: Float?,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -149,19 +213,19 @@ private fun CPUUsageRow(
         Text(
             text = title,
             color = textWeak,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium
         )
         LinearProgressIndicator(
             color = primary,
             trackColor = backgroundTertiary,
             strokeCap = StrokeCap.Round,
-            progress = { 0.24f },
+            progress = { (percent ?: 0f) / 100f },
             modifier = Modifier
-                .weight(weight = 1f)
+                .weight(1f)
                 .padding(start = 16.dp)
         )
         Text(
-            text = "24%",
+            text = percent?.let { "%.0f%%".format(it) } ?: "-",
             color = textWeak,
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.padding(start = 8.dp)
@@ -169,36 +233,39 @@ private fun CPUUsageRow(
     }
 }
 
+
 @Composable
-private fun RAMTile(modifier: Modifier = Modifier) {
+private fun RAMTile(
+    usedRamPercent: Float?,
+    usedRamGb: Pair<Float, Float>?,
+    modifier: Modifier = Modifier
+) {
     Tile(modifier = modifier) {
         Column(
-            modifier = Modifier.padding(
-                horizontal = 16.dp,
-                vertical = 32.dp
-            )
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 32.dp)
         ) {
             Text(
                 text = "RAM",
                 color = text,
+                fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodyLarge
             )
-            Spacer(modifier = Modifier.height(height = 4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "1,6 GB / 8 GB",
+                text = usedRamGb?.let { "%.1f GB / %.1f GB".format(it.first, it.second) } ?: "-",
                 color = textWeak,
                 style = MaterialTheme.typography.bodyMedium
             )
-            Spacer(modifier = Modifier.height(height = 16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             LinearProgressIndicator(
                 color = primary,
                 trackColor = backgroundTertiary,
                 strokeCap = StrokeCap.Round,
-                progress = { 0.24f },
+                progress = { (usedRamPercent ?: 0f) / 100f }
             )
-            Spacer(modifier = Modifier.height(height = 4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "24%",
+                text = usedRamPercent?.let { "%.0f%%".format(it) } ?: "-",
                 color = textWeak,
                 style = MaterialTheme.typography.labelLarge
             )
@@ -226,13 +293,14 @@ fun TemperatureGauge(
             Text(
                 text = "Temperature",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.LightGray
+                fontWeight = FontWeight.Bold,
+                color = Color.LightGray,
             )
             Text(
                 text = "${"%.1f".format(temperature)}°C",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color.White,
             )
             Spacer(modifier = Modifier.height(height = 42.dp))
         }
@@ -285,18 +353,14 @@ private fun Tile(
     }
 }
 
-@Composable
-private fun CpuUsageBar(usagePercent: Float) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = "CPU Usage: ${"%.1f".format(usagePercent)}%")
-        LinearProgressIndicator(
-            progress = usagePercent / 100f,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-        )
-    }
+private fun ProcessInfo.getBadgeColorAndText() = when (this.stateDescription) {
+    "sleeping" -> backgroundBadgeDisabled to textWeak
+    else -> backgroundBadgeEnabled to text
 }
+
+fun Float.format(digits: Int): String =
+    "%.${digits}f".format(this).replace('.', ',')
+
 
 @Composable
 @Preview(showBackground = true)
@@ -333,7 +397,33 @@ private fun Preview() {
                         processes = listOf(
                             ProcessInfo(
                                 pid = 123,
-                                name = "PreviewProcess",
+                                name = "systemd",
+                                stateCode = "R",
+                                stateDescription = "sleeping",
+                                user = "1000",
+                                group = "1000",
+                                memoryRss = 120000,
+                                memoryVirt = 300000,
+                                swap = 0,
+                                threads = 5,
+                                uTime = 120
+                            ),
+                            ProcessInfo(
+                                pid = 123,
+                                name = "systemd",
+                                stateCode = "R",
+                                stateDescription = "interrupt",
+                                user = "1000",
+                                group = "1000",
+                                memoryRss = 120000,
+                                memoryVirt = 300000,
+                                swap = 0,
+                                threads = 5,
+                                uTime = 120
+                            ),
+                            ProcessInfo(
+                                pid = 123,
+                                name = "systemd",
                                 stateCode = "R",
                                 stateDescription = "running",
                                 user = "1000",
