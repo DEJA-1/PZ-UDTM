@@ -24,7 +24,7 @@ Compose.
 - Kotlin
 - Jetpack Compose
 - Material3
-- Kotlin Coroutines + StateFlow
+- Kotlin Coroutines
 - Hilt (Dependency Injection)
 - REST API (JSON)
 
@@ -46,7 +46,8 @@ Komunikuje się poprzez protokół HTTP i udostępnia następujące endpointy:
 
 Przykładowe zapytanie:
 
-- http://<adres-ip-raspberry>:3000/cpu
+    ```bash
+    http://<adres-ip-raspberry>:3000/cpu
 
 ## Uruchomienie
 
