@@ -46,7 +46,6 @@ Komunikuje się poprzez protokół HTTP i udostępnia następujące endpointy:
 
 Przykładowe zapytanie:
 
-    ```
     http://<adres-ip-raspberry>:3000/cpu
 
 ## Uruchomienie
