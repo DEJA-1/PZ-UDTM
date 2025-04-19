@@ -1,5 +1,7 @@
 package com.km.pz_app.presentation.home
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +23,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -37,6 +40,7 @@ import com.km.pz_app.domain.model.CpuUsage
 import com.km.pz_app.domain.model.MemoryResponse
 import com.km.pz_app.domain.model.ProcessInfo
 import com.km.pz_app.domain.model.ProcessResponse
+import com.km.pz_app.presentation.components.Tile
 import com.km.pz_app.presentation.utils.Resource
 import com.km.pz_app.ui.theme.PZAPPTheme
 import com.km.pz_app.ui.theme.background
@@ -45,6 +49,8 @@ import com.km.pz_app.ui.theme.backgroundBadgeEnabled
 import com.km.pz_app.ui.theme.backgroundSecondary
 import com.km.pz_app.ui.theme.backgroundTertiary
 import com.km.pz_app.ui.theme.primary
+import com.km.pz_app.ui.theme.secondary
+import com.km.pz_app.ui.theme.tertiary
 import com.km.pz_app.ui.theme.text
 import com.km.pz_app.ui.theme.textWeak
 import kotlinx.collections.immutable.PersistentList
@@ -56,13 +62,15 @@ fun HomeScreen(
     onEvent: (HomeEvent) -> Unit,
 ) {
     Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
             .background(color = background)
             .padding(horizontal = 24.dp, vertical = 48.dp)
     ) {
         when {
-            state.isLoading -> CircularProgressIndicator()
+            state.isLoading -> CircularProgressIndicator(color = text)
             state.isError -> Text("Something went wrong")
             else -> Content(state = state, onEvent = onEvent)
         }
@@ -122,9 +130,8 @@ private fun ProcessesTile(processes: PersistentList<ProcessInfo>) {
 }
 
 @Composable
-private fun ProcessInfo(info: ProcessInfo, cpuPercent: Float? = null) {
+private fun ProcessInfo(info: ProcessInfo) {
     val (badgeColor, badgeTextColor) = info.getBadgeColorAndText()
-
     val memoryMB = info.memoryRss.toFloat() / 1024f
 
     Row(
@@ -206,6 +213,11 @@ private fun CPUUsageRow(
     title: String,
     percent: Float?,
 ) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = (percent ?: 0f) / 100f,
+        animationSpec = tween(durationMillis = 600)
+    )
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
@@ -216,10 +228,10 @@ private fun CPUUsageRow(
             style = MaterialTheme.typography.bodyMedium
         )
         LinearProgressIndicator(
-            color = primary,
+            color = animatedProgress.progressColor(),
             trackColor = backgroundTertiary,
             strokeCap = StrokeCap.Round,
-            progress = { (percent ?: 0f) / 100f },
+            progress = { animatedProgress },
             modifier = Modifier
                 .weight(1f)
                 .padding(start = 16.dp)
@@ -241,6 +253,11 @@ private fun RAMTile(
     modifier: Modifier = Modifier
 ) {
     Tile(modifier = modifier) {
+        val animatedRamProgress by animateFloatAsState(
+            targetValue = (usedRamPercent ?: 0f) / 100f,
+            animationSpec = tween(durationMillis = 600)
+        )
+
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 32.dp)
         ) {
@@ -258,10 +275,10 @@ private fun RAMTile(
             )
             Spacer(modifier = Modifier.height(16.dp))
             LinearProgressIndicator(
-                color = primary,
+                color = animatedRamProgress.progressColor(),
                 trackColor = backgroundTertiary,
                 strokeCap = StrokeCap.Round,
-                progress = { (usedRamPercent ?: 0f) / 100f }
+                progress = { animatedRamProgress }
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -279,10 +296,14 @@ fun TemperatureGauge(
     modifier: Modifier = Modifier,
     minTemp: Float = 0f,
     maxTemp: Float = 100f,
-    activeColor: Color = primary,
-    inactiveColor: Color = backgroundTertiary,
 ) {
-    val sweepAngle = ((temperature - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f) * 180f
+    val targetSweep = ((temperature - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f) * 180f
+    val progressRatio = ((temperature - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
+
+    val animatedSweepAngle by animateFloatAsState(
+        targetValue = targetSweep,
+        animationSpec = tween(durationMillis = 600)
+    )
 
     Tile(modifier = modifier.aspectRatio(ratio = 1.8f)) {
         Column(
@@ -315,7 +336,7 @@ fun TemperatureGauge(
             val center = Offset(x = size.width / 1.8f, y = size.height / 0.9f)
 
             drawArc(
-                color = inactiveColor,
+                color = backgroundTertiary,
                 startAngle = 180f,
                 sweepAngle = 180f,
                 useCenter = false,
@@ -325,31 +346,15 @@ fun TemperatureGauge(
             )
 
             drawArc(
-                color = activeColor,
+                color = progressRatio.progressColor(),
                 startAngle = 180f,
-                sweepAngle = sweepAngle,
+                sweepAngle = animatedSweepAngle,
                 useCenter = false,
                 topLeft = Offset(center.x - radius, center.y - radius),
                 size = Size(radius * 1.8f, radius * 1.8f),
                 style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
             )
         }
-    }
-}
-
-@Composable
-private fun Tile(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    Box(
-        modifier = modifier
-            .background(
-                color = backgroundSecondary,
-                shape = RoundedCornerShape(size = 20.dp)
-            ),
-    ) {
-        content()
     }
 }
 
@@ -360,6 +365,12 @@ private fun ProcessInfo.getBadgeColorAndText() = when (this.stateDescription) {
 
 fun Float.format(digits: Int): String =
     "%.${digits}f".format(this).replace('.', ',')
+
+fun Float.progressColor(): Color = when {
+    this >= 0.75f -> tertiary
+    this >= 0.5f -> secondary
+    else -> primary
+}
 
 
 @Composable

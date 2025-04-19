@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
-private val REFRESH_DATA_INTERVAL = 5.seconds
+private val REFRESH_DATA_INTERVAL = 2.seconds
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(

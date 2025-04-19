@@ -33,7 +33,7 @@ class FakeSystemRepository @Inject constructor() : ISystemRepository {
         previousIdle += idleDelta
 
         return CpuResponse(
-            cpuTemperature = 40f + (tick % 5),
+            cpuTemperature = 20f + ((tick * 4) % 68),
             cpuUsage = CpuUsage(
                 full = CpuStats(
                     userNorm = previousUser,
