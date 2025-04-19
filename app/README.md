@@ -50,6 +50,5 @@ Przykładowe zapytanie:
 
 ## Uruchomienie
 
-1. Sklonuj repozytorium:
    ```bash
    git clone https://github.com/DEJA-1/PZ-UDTM.git
