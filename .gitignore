@@ -1,3 +1,4 @@
-#rust code for git ignore
-target/
-Cargo.lock
+server/target/
+server/Cargo.lock
+rpi_ll_sw/sdk/
+rpi_ll_sw/build/
