@@ -24,6 +24,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val viewModel: HomeViewModel by viewModels()
         setContent {
+            enableEdgeToEdge()
             PZAPPTheme {
                 val state = viewModel.state.collectAsStateWithLifecycle().value
                 HomeScreen(

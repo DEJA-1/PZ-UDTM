@@ -16,14 +16,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
-private val REFRESH_DATA_INTERVAL = 2.seconds
+private val REFRESH_DATA_INTERVAL = 6.seconds
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: FakeSystemRepository
+    private val repository: ISystemRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -95,7 +96,9 @@ class HomeViewModel @Inject constructor(
             runCatching {
                 repository.getMemoryStatus()
             }.onSuccess { memoryResponse ->
-                val (percent, gbPair) = mapMemoryState(Resource.Success(memoryResponse))
+                val (percent, gbPair) = withContext(Dispatchers.Default) {
+                    mapMemoryState(Resource.Success(memoryResponse))
+                }
                 updateState {
                     copy(
                         memory = Resource.Success(data = memoryResponse),
@@ -103,6 +106,7 @@ class HomeViewModel @Inject constructor(
                         usedRamGb = gbPair
                     )
                 }
+                Log.d("test", memoryResponse.toString())
             }.onFailure {
                 updateState {
                     copy(memory = Resource.Error(message = "Error: ${it.message}"))
@@ -135,15 +139,10 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun calculateAndUpdateCpu(newCpu: CpuResponse) {
-        val current = newCpu.cpuUsage.full
-        val calculatedPercent = previousCpuStats?.let { previous ->
-            calculateCpuUsagePercentage(previous, current)
+    private suspend fun calculateAndUpdateCpu(newCpu: CpuResponse) {
+        val (percent, temp) = withContext(Dispatchers.Default) {
+            mapCpuState(newCpu)
         }
-
-        previousCpuStats = current
-
-        val (percent, temp) = mapCpuState(newCpu, calculatedPercent)
 
         updateState {
             copy(
@@ -154,9 +153,10 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun mapCpuState(cpu: CpuResponse, percent: Float?): Pair<Float?, Float?> {
+    private fun mapCpuState(cpu: CpuResponse): Pair<Float, Float> {
+        val cpuUsagePercent = calculateCpuUsageFromSnapshot(cpu.cpuUsage.full)
         val temp = cpu.cpuTemperature
-        return percent to temp
+        return cpuUsagePercent to temp
     }
 
     private fun mapMemoryState(memory: Resource<MemoryResponse>): Pair<Float?, Pair<Float, Float>?> {
@@ -171,24 +171,15 @@ class HomeViewModel @Inject constructor(
         return percent to gbPair
     }
 
-    private fun calculateCpuUsagePercentage(
-        previous: CpuStats,
-        current: CpuStats
-    ): Float {
-        val prevActive =
-            previous.userNorm + previous.userNice + previous.kernel + previous.ioWait + previous.irq + previous.softIrq
-        val prevTotal = prevActive + previous.idle
+    private fun calculateCpuUsageFromSnapshot(stats: CpuStats): Float {
+        val total = stats.userNorm + stats.userNice + stats.kernel + stats.idle +
+                stats.ioWait + stats.irq + stats.softIrq
 
-        val currActive =
-            current.userNorm + current.userNice + current.kernel + current.ioWait + current.irq + current.softIrq
-        val currTotal = currActive + current.idle
-
-        val totalDelta = currTotal - prevTotal
-        val activeDelta = currActive - prevActive
-
-        return if (totalDelta > 0) {
-            (activeDelta.toFloat() / totalDelta.toFloat()) * 100f
-        } else 0f
+        return if (total > 0) {
+            ((total - stats.idle).toFloat() / total.toFloat()) * 100f
+        } else {
+            0f
+        }
     }
 
     private fun updateState(update: HomeState.() -> HomeState) {

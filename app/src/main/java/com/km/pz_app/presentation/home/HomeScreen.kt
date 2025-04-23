@@ -70,9 +70,20 @@ fun HomeScreen(
             .padding(horizontal = 24.dp, vertical = 48.dp)
     ) {
         when {
-            state.isLoading -> CircularProgressIndicator(color = text)
-            state.isError -> Text("Something went wrong")
-            else -> Content(state = state, onEvent = onEvent)
+            state.isLoading -> CircularProgressIndicator(
+                color = text
+            )
+
+            state.isError -> Text(
+                "Coś poszło nie tak",
+                color = text,
+                fontWeight = FontWeight.Bold
+            )
+
+            else -> Content(
+                state = state,
+                onEvent = onEvent
+            )
         }
     }
 }
@@ -85,7 +96,8 @@ private fun Content(
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(space = 16.dp),
-        modifier = Modifier
+        modifier = modifier
+            .padding(bottom = 16.dp)
             .fillMaxSize()
             .verticalScroll(state = rememberScrollState())
     ) {
@@ -132,7 +144,7 @@ private fun ProcessesTile(processes: PersistentList<ProcessInfo>) {
 @Composable
 private fun ProcessInfo(info: ProcessInfo) {
     val (badgeColor, badgeTextColor) = info.getBadgeColorAndText()
-    val memoryMB = info.memoryRss.toFloat() / 1024f
+    val memoryMB = info.memoryVirt.toFloat() / 1024f
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -198,10 +210,12 @@ private fun CPUTile(
             CPUUsageRow(
                 title = "Sys",
                 percent = systemPercent,
+                isIdle = false,
             )
             CPUUsageRow(
                 title = "Idle",
                 percent = systemPercent?.let { 100f - it },
+                isIdle = true,
             )
         }
     }
@@ -212,6 +226,7 @@ private fun CPUTile(
 private fun CPUUsageRow(
     title: String,
     percent: Float?,
+    isIdle: Boolean,
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = (percent ?: 0f) / 100f,
@@ -228,7 +243,7 @@ private fun CPUUsageRow(
             style = MaterialTheme.typography.bodyMedium
         )
         LinearProgressIndicator(
-            color = animatedProgress.progressColor(),
+            color = animatedProgress.progressColor(isIdle = isIdle),
             trackColor = backgroundTertiary,
             strokeCap = StrokeCap.Round,
             progress = { animatedProgress },
@@ -366,10 +381,10 @@ private fun ProcessInfo.getBadgeColorAndText() = when (this.stateDescription) {
 fun Float.format(digits: Int): String =
     "%.${digits}f".format(this).replace('.', ',')
 
-fun Float.progressColor(): Color = when {
-    this >= 0.75f -> tertiary
+fun Float.progressColor(isIdle: Boolean = false): Color = when {
+    this >= 0.75f -> if (isIdle) primary else tertiary
     this >= 0.5f -> secondary
-    else -> primary
+    else -> if (isIdle) tertiary else primary
 }
 
 
