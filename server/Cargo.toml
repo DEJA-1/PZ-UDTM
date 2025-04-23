@@ -1,0 +1,47 @@
+[package]
+name = "system-status-api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Web framework
+axum = "0.7"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] } # "full" includes rt-multi-thread, macros, sync, time, net
+
+# Serialization/Deserialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0" # For handling JSON data
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] } # Using env-filter is common for flexible log levels
+
+# Error handling helper
+thiserror = "1.0"
+
+# Used in controller.rs and main.rs for static lazy initialization (as provided in the code)
+once_cell = "1.19"
+
+# Used in controller.rs for serializing/deserializing command data
+byteorder = "1.5"
+
+# --- Note: ---
+# The provided code has inconsistencies regarding configuration.
+# - `config.rs` defines a simplified env-var based loading.
+# - `main.rs` and `controller.rs` still use `once_cell::sync::Lazy` for configuration.
+# This Cargo.toml includes `once_cell` to match the `main.rs` and `controller.rs` code provided.
+# If you intend to fully use the simplified `config.rs`, you would:
+#   1. Remove `once_cell` from this `Cargo.toml`.
+#   2. Update `main.rs` and `controller.rs` to remove `Lazy` and accept config via parameters (like in the previous "simpler config" example).
+
+[profile.release]
+# Optimizations for smaller binary size, good for embedded/Raspberry Pi
+opt-level = "z"  # Optimize for size.
+lto = true       # Enable link-time optimization.
+codegen-units = 1 # Reduce parallelism for potentially better optimization.
+panic = "abort"  # Abort on panic for smaller binary size.
+strip = true     # Strip symbols from the binary.
