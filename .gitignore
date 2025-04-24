@@ -1,3 +1,7 @@
+server/target/
+server/Cargo.lock
+rpi_ll_sw/sdk/
+rpi_ll_sw/build/
 *.iml
 .gradle
 /local.properties
