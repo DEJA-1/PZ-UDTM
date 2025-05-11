@@ -16,7 +16,6 @@ pub struct CpuUsage {
     pub cores: Option<Vec<CoreStat>>,
 }
 
-// Combined Stat structure for Full/Core CPU usage
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct CpuStat {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -52,8 +51,6 @@ pub struct MemoryInfo {
     pub available: Option<u64>, // Assuming kB
 }
 
-// --- Process Info ---
-
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ProcessesInfo {
     pub processes: Vec<ProcessInfo>,
@@ -82,7 +79,13 @@ pub struct ProcessInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub threads: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub utime: Option<u64>, // User mode time (consider units, might be jiffies/ticks)
+    pub utime: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct ExternalTemperatureInfo {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub temperature: Option<f32>,
 }
 
 // --- Overall System Status ---
@@ -92,4 +95,5 @@ pub struct SystemStatus {
     pub cpu: CpuInfo,
     pub memory: MemoryInfo,
     pub processes: ProcessesInfo,
+    pub external_temperature: ExternalTemperatureInfo,
 }

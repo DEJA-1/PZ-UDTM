@@ -11,6 +11,7 @@ pub struct Settings {
     pub cpu_file: PathBuf,
     pub ram_file: PathBuf,
     pub proc_file: PathBuf,
+    pub ext_temp_file: PathBuf,
     // Controller Settings
     pub controller_host: String,
     pub controller_port: u16,
@@ -74,14 +75,17 @@ impl Settings {
 
             // --- Data Source Files ---
             cpu_file: PathBuf::from(get_env_var_string("CPU_FILE", "/tmp/cpu".to_string())),
-            // Note: ram_file example contains RAM and CPU Usage stats
             ram_file: PathBuf::from(get_env_var_string("RAM_FILE", "/tmp/ram".to_string())),
             proc_file: PathBuf::from(get_env_var_string("PROC_FILE", "/tmp/proc".to_string())),
+            ext_temp_file: PathBuf::from(get_env_var_string(
+                "EXT_TEMP_FILE",
+                "/tmp/ext_temp".to_string(),
+            )),
 
             // --- Controller Settings ---
             controller_host: get_env_var_string("CONTROL_HOST", "127.0.0.1".to_string()),
-            controller_port: get_env_var("CONTROL_PORT", 9999u16),
-            controller_key: get_env_var("CONTROL_KEY", 0xDEADBEEF), // 3735928559 decimal
+            controller_port: get_env_var("CONTROL_PORT", 31337u16),
+            controller_key: get_env_var("CONTROL_KEY", 0xDEADBEEF),
         }
     }
 }
