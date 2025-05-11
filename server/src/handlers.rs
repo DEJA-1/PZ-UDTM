@@ -33,6 +33,15 @@ pub async fn get_processes_info(
     Ok(Json(processes_info))
 }
 
+pub async fn get_ext_temp_info(
+    State(state): State<Arc<RwLock<AppState>>>,
+) -> Result<Json<ExternalTemperatureInfo>, StatusCode> {
+    debug!("Handling /ext_temp request");
+    let app_state = state.read().await;
+    let ext_temp_info = app_state.system_status.external_temperature.clone();
+    Ok(Json(ext_temp_info))
+}
+
 // --- Control Handlers ---
 fn map_control_error(e: ControlError) -> (StatusCode, String) {
     error!("Control operation failed: {}", e);
@@ -80,6 +89,12 @@ pub struct KillRequest {
     pid: u32,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct SetGpioRequest {
+    gpio_num: u8, // GPIO pin number (17 for GPIO17)
+    gpio_val: u8, // Value (0 for low, 1 for high)
+}
+
 pub async fn kill_process(
     State(state): State<Arc<RwLock<AppState>>>,
     Json(payload): Json<KillRequest>,
@@ -90,6 +105,25 @@ pub async fn kill_process(
     );
     let app_state = state.read().await;
     match app_state.controller_client.kill_process(payload.pid).await {
+        Ok(_) => Ok(StatusCode::OK),
+        Err(e) => Err(map_control_error(e)),
+    }
+}
+
+pub async fn set_gpio(
+    State(state): State<Arc<RwLock<AppState>>>,
+    Json(payload): Json<SetGpioRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    debug!(
+        "Handling POST /control/gpio/set with payload: {:?}",
+        payload
+    );
+    let app_state = state.read().await;
+    match app_state
+        .controller_client
+        .set_gpio(payload.gpio_num, payload.gpio_val)
+        .await
+    {
         Ok(_) => Ok(StatusCode::OK),
         Err(e) => Err(map_control_error(e)),
     }
