@@ -20,7 +20,6 @@ use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-// --- Simplified Shared Application State ---
 #[derive(Debug)]
 pub struct AppState {
     pub system_status: SystemStatus,
@@ -29,7 +28,6 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() {
-    // --- Load Configuration ---
     let settings = Settings::load();
 
     let log_level_filter = EnvFilter::try_from_default_env()
@@ -43,10 +41,11 @@ async fn main() {
 
     info!("Starting system status API...");
     info!(
-        "Data source files: CPU='{}', RAM/Usage='{}', Proc='{}'",
+        "Data source files: CPU='{}', RAM/Usage='{}', Proc='{}', ExtTemp='{}'",
         settings.cpu_file.display(),
         settings.ram_file.display(),
-        settings.proc_file.display()
+        settings.proc_file.display(),
+        settings.ext_temp_file.display()
     );
     info!(
         "Data refresh interval: {} seconds",
@@ -101,6 +100,7 @@ async fn main() {
                 &settings_clone_for_updater.cpu_file,
                 &settings_clone_for_updater.ram_file,
                 &settings_clone_for_updater.proc_file,
+                &settings_clone_for_updater.ext_temp_file,
             )
             .await;
 
@@ -117,8 +117,10 @@ async fn main() {
         .route("/cpu", get(handlers::get_cpu_info))
         .route("/memory", get(handlers::get_memory_info))
         .route("/processes", get(handlers::get_processes_info))
+        .route("/ext_temp", get(handlers::get_ext_temp_info))
         .route("/control/ping", post(handlers::ping_controller))
         .route("/control/process/kill", post(handlers::kill_process))
+        .route("/control/gpio/set", post(handlers::set_gpio))
         .route("/control/system/shutdown", post(handlers::shutdown_system))
         .route("/control/system/reboot", post(handlers::reboot_system))
         .route("/terminal/ws", get(terminal_ws_handler))

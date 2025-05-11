@@ -12,8 +12,9 @@ use tracing::{debug, error, info, warn};
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(2);
 const CMD_TIMEOUT: Duration = Duration::from_secs(5);
 
-const CMD_PING: u8 = 0x01;
-const CMD_KILL_PROCESS: u8 = 0x02;
+const CMD_KILL_PROCESS: u8 = 0x00;
+const CMD_GPIO_SET: u8 = 0x01;
+const CMD_PING: u8 = 0x02;
 const CMD_SHUTDOWN: u8 = 0x03;
 const CMD_REBOOT: u8 = 0x04;
 
@@ -217,6 +218,14 @@ impl ControllerClient {
         info!("Requesting kill process PID: {}", pid);
         self.send_command(CMD_KILL_PROCESS, pid).await?;
         info!("Kill command for PID {} acknowledged by controller.", pid);
+        Ok(())
+    }
+
+    pub async fn set_gpio(&self, gpio_num: u8, gpio_val: u8) -> Result<(), ControlError> {
+        info!("Requesting GPIO set: pin={}, value={}", gpio_num, gpio_val);
+        let arg1: u32 = (gpio_num as u32) | ((gpio_val as u32) << 8);
+        self.send_command(CMD_GPIO_SET, arg1).await?;
+        info!("GPIO set command acknowledged by controller.");
         Ok(())
     }
 

@@ -433,12 +433,62 @@ async fn parse_proc_file(file_path: &Path) -> Result<ProcessesInfo, ParseError> 
     Ok(processes_info)
 }
 
-pub async fn read_status_files(cpu_path: &Path, ram_path: &Path, proc_path: &Path) -> SystemStatus {
+// --- New: Parses /tmp/ext_temp (External Temperature) ---
+async fn parse_ext_temp_file(file_path: &Path) -> Result<ExternalTemperatureInfo, ParseError> {
+    let content = fs::read_to_string(file_path)
+        .await
+        .map_err(|e| ParseError::Io(file_path.to_string_lossy().into_owned(), e))?;
+
+    let mut ext_temp_info = ExternalTemperatureInfo::default();
+
+    for line in content.lines() {
+        let trimmed_line = line.trim();
+        if trimmed_line.is_empty() {
+            continue;
+        }
+
+        // The C code writes "Temp: X.Y\n"
+        if let Some(val_str) = trimmed_line.strip_prefix("Temp:") {
+            // Trim whitespace after the colon and parse the value
+            let value_trimmed = val_str.trim();
+            if !value_trimmed.is_empty() {
+                match parse_numeric::<f32>(value_trimmed, trimmed_line, file_path) {
+                    Ok(val) => ext_temp_info.temperature = Some(val),
+                    Err(e) => warn!("{}: {}", file_path.display(), e),
+                }
+            } else {
+                warn!(
+                    "{}: Empty value found after 'Temp:' on line: '{}'",
+                    file_path.display(),
+                    trimmed_line
+                );
+            }
+            // Assuming only one temp line per file, we can stop here
+            break;
+        } else {
+            // Ignore other lines silently
+            debug!(
+                "{}: Ignoring unrecognized line: {}",
+                file_path.display(),
+                trimmed_line
+            );
+        }
+    }
+    Ok(ext_temp_info)
+}
+
+pub async fn read_status_files(
+    cpu_path: &Path,
+    ram_path: &Path,
+    proc_path: &Path,
+    ext_temp_path: &Path,
+) -> SystemStatus {
     debug!(
-        "Reading status files: CPU='{}', RAM='{}', Proc='{}'", // Renamed log slightly
+        "Reading status files: CPU='{}', RAM='{}', Proc='{}', ExtTemp='{}'", // Renamed log slightly
         cpu_path.display(),
         ram_path.display(),
-        proc_path.display()
+        proc_path.display(),
+        ext_temp_path.display()
     );
 
     let mut system_status = SystemStatus::default();
@@ -469,6 +519,19 @@ pub async fn read_status_files(cpu_path: &Path, ram_path: &Path, proc_path: &Pat
             error!(
                 "Failed to parse Process file '{}': {}",
                 proc_path.display(),
+                e
+            );
+        }
+    }
+
+    match parse_ext_temp_file(ext_temp_path).await {
+        Ok(ext_temp_info) => {
+            system_status.external_temperature = ext_temp_info;
+        }
+        Err(e) => {
+            error!(
+                "Failed to parse External Temperature file '{}': {}",
+                ext_temp_path.display(),
                 e
             );
         }
