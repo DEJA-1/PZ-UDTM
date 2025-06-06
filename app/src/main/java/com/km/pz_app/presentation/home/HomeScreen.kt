@@ -35,7 +35,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -64,7 +63,6 @@ import com.km.pz_app.ui.theme.PZAPPTheme
 import com.km.pz_app.ui.theme.background
 import com.km.pz_app.ui.theme.backgroundBadgeDisabled
 import com.km.pz_app.ui.theme.backgroundBadgeEnabled
-import com.km.pz_app.ui.theme.backgroundSecondary
 import com.km.pz_app.ui.theme.backgroundTertiary
 import com.km.pz_app.ui.theme.blue
 import com.km.pz_app.ui.theme.primary
@@ -175,7 +173,7 @@ private fun TemperatureChart(state: HomeState) {
 
     val temperatureToShow = when (tempType) {
         TemperatureType.Internal -> state.cpuTemperature
-        TemperatureType.External -> state.cpuExternalTemperature
+        TemperatureType.External -> state.externalTemperature
     }
 
     temperatureToShow?.let {

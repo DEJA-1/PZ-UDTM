@@ -11,14 +11,14 @@ data class HomeState(
     private val cpu: Resource<CpuResponse>,
     private val memory: Resource<MemoryResponse>,
     val processes: Resource<ProcessResponse>,
-    private val externalCpuTemperatureResource: Resource<ExternalTemperatureResponse>? = null,
+    private val externalTemperatureResource: Resource<ExternalTemperatureResponse>? = null,
     val cpuPercentUsed: Float? = null,
     val cpuTemperature: Float? = null,
-    val cpuExternalTemperature: Float? = null,
+    val externalTemperature: Float? = null,
     val usedRamPercent: Float? = null,
     val usedRamGb: Pair<Float, Float>? = null,
 ) {
-    private val resources = persistentListOf(cpu, memory, processes, externalCpuTemperatureResource)
+    private val resources = persistentListOf(cpu, memory, processes, externalTemperatureResource)
     val isLoading = resources.any { it is Resource.Loading }
     val isError = resources.any { it is Resource.Error }
 }

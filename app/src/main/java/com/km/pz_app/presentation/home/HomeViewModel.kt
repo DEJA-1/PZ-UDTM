@@ -3,7 +3,6 @@ package com.km.pz_app.presentation.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.km.pz_app.data.repository.FakeSystemRepository
 import com.km.pz_app.domain.model.CpuResponse
 import com.km.pz_app.domain.model.CpuStats
 import com.km.pz_app.domain.model.MemoryResponse
@@ -26,10 +25,8 @@ private val REFRESH_DATA_INTERVAL = 6.seconds
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-//    private val repository: ISystemRepository
+    private val repository: ISystemRepository
 ) : ViewModel() {
-    private val repository: ISystemRepository = FakeSystemRepository()
-
     private val _state = MutableStateFlow(
         HomeState(
             cpu = Resource.Loading,
@@ -157,13 +154,13 @@ class HomeViewModel @Inject constructor(
             }.onSuccess {
                 updateState {
                     copy(
-                        externalCpuTemperatureResource = Resource.Success(data = it),
-                        cpuExternalTemperature = it.temperature,
+                        externalTemperatureResource = Resource.Success(data = it),
+                        externalTemperature = it.temperature,
                     )
                 }
             }.onFailure {
                 updateState {
-                    copy(externalCpuTemperatureResource = Resource.Error(message = "Error: ${it.message}"))
+                    copy(externalTemperatureResource = Resource.Error(message = "Error: ${it.message}"))
                 }
                 Log.w("Error", it.message.toString())
             }

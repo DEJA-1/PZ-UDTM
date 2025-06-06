@@ -24,5 +24,4 @@ interface SystemStatusApi {
 
     @POST("/control/process/kill")
     suspend fun killProcess(@Body request: KillProcessRequest): Unit
-
 }
