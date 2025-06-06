@@ -1,6 +1,7 @@
 package com.km.pz_app.presentation.home
 
 import com.km.pz_app.domain.model.CpuResponse
+import com.km.pz_app.domain.model.ExternalTemperatureResponse
 import com.km.pz_app.domain.model.MemoryResponse
 import com.km.pz_app.domain.model.ProcessResponse
 import com.km.pz_app.presentation.utils.Resource
@@ -10,12 +11,14 @@ data class HomeState(
     private val cpu: Resource<CpuResponse>,
     private val memory: Resource<MemoryResponse>,
     val processes: Resource<ProcessResponse>,
+    private val externalCpuTemperatureResource: Resource<ExternalTemperatureResponse>? = null,
     val cpuPercentUsed: Float? = null,
     val cpuTemperature: Float? = null,
+    val cpuExternalTemperature: Float? = null,
     val usedRamPercent: Float? = null,
-    val usedRamGb: Pair<Float, Float>? = null
+    val usedRamGb: Pair<Float, Float>? = null,
 ) {
-    private val resources = persistentListOf(cpu, memory, processes)
+    private val resources = persistentListOf(cpu, memory, processes, externalCpuTemperatureResource)
     val isLoading = resources.any { it is Resource.Loading }
     val isError = resources.any { it is Resource.Error }
 }

@@ -3,6 +3,7 @@ package com.km.pz_app.data.repository
 import com.km.pz_app.domain.model.CpuResponse
 import com.km.pz_app.domain.model.CpuStats
 import com.km.pz_app.domain.model.CpuUsage
+import com.km.pz_app.domain.model.ExternalTemperatureResponse
 import com.km.pz_app.domain.model.MemoryResponse
 import com.km.pz_app.domain.model.ProcessInfo
 import com.km.pz_app.domain.model.ProcessResponse
@@ -65,6 +66,13 @@ class FakeSystemRepository @Inject constructor() : ISystemRepository {
                 ),
                 cores = emptyList()
             )
+        )
+    }
+
+    override suspend fun getExternalTemperature(): ExternalTemperatureResponse {
+        tick++
+        return ExternalTemperatureResponse(
+            temperature = 20f + ((tick * 12) % 68)
         )
     }
 

@@ -2,6 +2,7 @@ package com.km.pz_app.presentation.home
 
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -47,6 +49,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.km.pz_app.domain.model.CpuResponse
@@ -61,7 +64,9 @@ import com.km.pz_app.ui.theme.PZAPPTheme
 import com.km.pz_app.ui.theme.background
 import com.km.pz_app.ui.theme.backgroundBadgeDisabled
 import com.km.pz_app.ui.theme.backgroundBadgeEnabled
+import com.km.pz_app.ui.theme.backgroundSecondary
 import com.km.pz_app.ui.theme.backgroundTertiary
+import com.km.pz_app.ui.theme.blue
 import com.km.pz_app.ui.theme.primary
 import com.km.pz_app.ui.theme.secondary
 import com.km.pz_app.ui.theme.tertiary
@@ -136,12 +141,9 @@ private fun Content(
                 killProcessDialogId = null
             }
         )
-        state.cpuTemperature?.let {
-            TemperatureGauge(
-                temperature = it,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+
+        TemperatureChart(state)
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
             modifier = Modifier.fillMaxWidth()
@@ -165,6 +167,28 @@ private fun Content(
             )
         }
     }
+}
+
+@Composable
+private fun TemperatureChart(state: HomeState) {
+    var tempType by rememberSaveable { mutableStateOf(TemperatureType.Internal) }
+
+    val temperatureToShow = when (tempType) {
+        TemperatureType.Internal -> state.cpuTemperature
+        TemperatureType.External -> state.cpuExternalTemperature
+    }
+
+    temperatureToShow?.let {
+        TemperatureGauge(
+            temperature = it,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+    TemperatureTypeSelector(
+        selected = tempType,
+        onSelect = { tempType = it },
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Composable
@@ -496,6 +520,53 @@ fun TemperatureGauge(
             )
         }
     }
+}
+
+@Composable
+private fun TemperatureTypeSelector(
+    selected: TemperatureType,
+    onSelect: (TemperatureType) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val types = listOf(TemperatureType.Internal, TemperatureType.External)
+
+    Row(
+        modifier = modifier
+            .background(
+                color = backgroundTertiary,
+                shape = RoundedCornerShape(50)
+            )
+            .padding(all = 4.dp)
+    ) {
+        types.forEach { type ->
+            val isSelected = type == selected
+            val animatedBackgroundColor by animateColorAsState(
+                targetValue = if (isSelected) blue.copy(alpha = 0.99f) else Color.Transparent,
+                animationSpec = tween(durationMillis = 600)
+            )
+            val textColor = if (isSelected) Color.White else textWeak
+            val fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+
+            Text(
+                text = type.label,
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(50))
+                    .clickable { onSelect(type) }
+                    .background(animatedBackgroundColor)
+                    .padding(vertical = 8.dp),
+                textAlign = TextAlign.Center,
+                color = textColor,
+                fontWeight = fontWeight,
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+    }
+}
+
+private enum class TemperatureType(val label: String) {
+    Internal("Internal"),
+    External("External")
 }
 
 private fun showToast(context: Context, text: String) {

@@ -66,6 +66,7 @@ class HomeViewModel @Inject constructor(
         fetchCpuData(showLoading = showLoading)
         fetchMemoryData(showLoading = showLoading)
         fetchProcessesData(showLoading = showLoading)
+        fetchExternalTemperature(showLoading = showLoading)
     }
 
     private fun fetchCpuData(showLoading: Boolean) {
@@ -137,6 +138,32 @@ class HomeViewModel @Inject constructor(
             }.onFailure {
                 updateState {
                     copy(processes = Resource.Error(message = "Error: ${it.message}"))
+                }
+                Log.w("Error", it.message.toString())
+            }
+        }
+    }
+
+    private fun fetchExternalTemperature(showLoading: Boolean) {
+        if (showLoading) {
+            updateState {
+                copy(processes = Resource.Loading)
+            }
+        }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                repository.getExternalTemperature()
+            }.onSuccess {
+                updateState {
+                    copy(
+                        externalCpuTemperatureResource = Resource.Success(data = it),
+                        cpuExternalTemperature = it.temperature,
+                    )
+                }
+            }.onFailure {
+                updateState {
+                    copy(externalCpuTemperatureResource = Resource.Error(message = "Error: ${it.message}"))
                 }
                 Log.w("Error", it.message.toString())
             }
