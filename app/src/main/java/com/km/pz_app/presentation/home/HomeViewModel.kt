@@ -11,9 +11,11 @@ import com.km.pz_app.domain.repository.ISystemRepository
 import com.km.pz_app.presentation.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -24,8 +26,9 @@ private val REFRESH_DATA_INTERVAL = 6.seconds
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: ISystemRepository
+//    private val repository: ISystemRepository
 ) : ViewModel() {
+    private val repository: ISystemRepository = FakeSystemRepository()
 
     private val _state = MutableStateFlow(
         HomeState(
@@ -36,7 +39,8 @@ class HomeViewModel @Inject constructor(
     )
     val state = _state.asStateFlow()
     private var initialInvoke = true
-    private var previousCpuStats: CpuStats? = null
+    private val effectChannel: Channel<HomeEffect> = Channel(Channel.CONFLATED)
+    val effectFlow = effectChannel.receiveAsFlow()
 
     init {
         startDataRefreshLoop()
@@ -44,7 +48,7 @@ class HomeViewModel @Inject constructor(
 
     fun onEvent(event: HomeEvent) {
         when (event) {
-            else -> {}
+            is HomeEvent.ProcessKillClick -> handleProcessKill(pid = event.pid)
         }
     }
 
@@ -153,6 +157,19 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun handleProcessKill(pid: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                repository.killProcess(pid = pid)
+            }.onSuccess {
+                pushEffect(HomeEffect.KillProcessSuccess)
+            }.onFailure {
+                pushEffect(HomeEffect.KillProcessFailure)
+                Log.w("Error", it.message.toString())
+            }
+        }
+    }
+
     private fun mapCpuState(cpu: CpuResponse): Pair<Float, Float> {
         val cpuUsagePercent = calculateCpuUsageFromSnapshot(cpu.cpuUsage.full)
         val temp = cpu.cpuTemperature
@@ -186,4 +203,9 @@ class HomeViewModel @Inject constructor(
         _state.update { it.update() }
     }
 
+    private suspend fun pushEffect(effect: HomeEffect) {
+        withContext(Dispatchers.Main.immediate) {
+            effectChannel.trySend(effect)
+        }
+    }
 }

@@ -8,4 +8,5 @@ interface ISystemRepository {
     suspend fun getCpuStatus(): CpuResponse
     suspend fun getMemoryStatus(): MemoryResponse
     suspend fun getProcesses(): ProcessResponse
+    suspend fun killProcess(pid: Int): Unit
 }

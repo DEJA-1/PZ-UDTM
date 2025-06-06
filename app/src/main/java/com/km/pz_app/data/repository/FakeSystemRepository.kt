@@ -19,6 +19,25 @@ class FakeSystemRepository @Inject constructor() : ISystemRepository {
     private var previousIdle = 3000L
     private var totalRam = 3882924L
     private var currentUsedRam = 1500000L
+    private val states = listOf("sleeping", "running", "zombie", "interrupt")
+    private val names = listOf("systemd", "kworker", "irq/51", "node")
+
+    private val processes = (1..4).map {
+        ProcessInfo(
+            pid = it,
+            name = names.random(),
+            stateCode = "S",
+            stateDescription = states.random(),
+            user = "1000",
+            group = "1000",
+            memoryRss = (80_000..160_000).random().toLong(),
+            memoryVirt = (200_000..300_000).random().toLong(),
+            swap = 0,
+            threads = (1..6).random(),
+            uTime = (tick * (1..30).random()).toLong()
+        )
+    }.toMutableList()
+
 
     override suspend fun getCpuStatus(): CpuResponse {
         delay(300)
@@ -67,27 +86,10 @@ class FakeSystemRepository @Inject constructor() : ISystemRepository {
 
     override suspend fun getProcesses(): ProcessResponse {
         delay(400)
-
-        val states = listOf("sleeping", "running", "zombie", "interrupt")
-        val names = listOf("systemd", "kworker", "irq/51", "node")
-
-        val processes = (1..4).map {
-            ProcessInfo(
-                pid = it,
-                name = names.random(),
-                stateCode = "S",
-                stateDescription = states.random(),
-                user = "1000",
-                group = "1000",
-                memoryRss = (80_000..160_000).random().toLong(),
-                memoryVirt = (200_000..300_000).random().toLong(),
-                swap = 0,
-                threads = (1..6).random(),
-                uTime = (tick * (1..30).random()).toLong()
-            )
-        }
-
         return ProcessResponse(processes = processes)
     }
 
+    override suspend fun killProcess(pid: Int) {
+        processes.removeIf { it.pid == pid }
+    }
 }

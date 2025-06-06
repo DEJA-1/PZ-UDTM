@@ -1,9 +1,12 @@
 package com.km.pz_app.presentation.home
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,22 +18,34 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -46,7 +61,6 @@ import com.km.pz_app.ui.theme.PZAPPTheme
 import com.km.pz_app.ui.theme.background
 import com.km.pz_app.ui.theme.backgroundBadgeDisabled
 import com.km.pz_app.ui.theme.backgroundBadgeEnabled
-import com.km.pz_app.ui.theme.backgroundSecondary
 import com.km.pz_app.ui.theme.backgroundTertiary
 import com.km.pz_app.ui.theme.primary
 import com.km.pz_app.ui.theme.secondary
@@ -55,10 +69,13 @@ import com.km.pz_app.ui.theme.text
 import com.km.pz_app.ui.theme.textWeak
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.toPersistentList
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 @Composable
 fun HomeScreen(
     state: HomeState,
+    effectFlow: Flow<HomeEffect>,
     onEvent: (HomeEvent) -> Unit,
 ) {
     Column(
@@ -75,13 +92,14 @@ fun HomeScreen(
             )
 
             state.isError -> Text(
-                "Coś poszło nie tak",
+                text = "Coś poszło nie tak",
                 color = text,
                 fontWeight = FontWeight.Bold
             )
 
             else -> Content(
                 state = state,
+                effectFlow = effectFlow,
                 onEvent = onEvent
             )
         }
@@ -92,8 +110,15 @@ fun HomeScreen(
 private fun Content(
     state: HomeState,
     onEvent: (HomeEvent) -> Unit,
+    effectFlow: Flow<HomeEffect>,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    var killProcessDialogId: Int? by rememberSaveable {
+        mutableStateOf(null)
+    }
+    HandleProcessKillResult(effectFlow, context)
+
     Column(
         verticalArrangement = Arrangement.spacedBy(space = 16.dp),
         modifier = modifier
@@ -101,6 +126,16 @@ private fun Content(
             .fillMaxSize()
             .verticalScroll(state = rememberScrollState())
     ) {
+        ShowDialog(
+            shouldShow = killProcessDialogId != null,
+            onConfirm = {
+                onEvent(HomeEvent.ProcessKillClick(killProcessDialogId!!))
+                killProcessDialogId = null
+            },
+            onCancel = {
+                killProcessDialogId = null
+            }
+        )
         state.cpuTemperature?.let {
             TemperatureGauge(
                 temperature = it,
@@ -122,32 +157,69 @@ private fun Content(
             )
         }
         state.processes.getResultOrNull()?.let {
-            ProcessesTile(processes = it.processes.toPersistentList())
+            ProcessesTile(
+                processes = it.processes.toPersistentList(),
+                onDeleteClick = { id ->
+                    killProcessDialogId = id
+                }
+            )
         }
     }
 }
 
 @Composable
-private fun ProcessesTile(processes: PersistentList<ProcessInfo>) {
-    Tile(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(space = 16.dp),
-            modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp)
-        ) {
-            processes.forEach {
-                ProcessInfo(info = it)
+private fun HandleProcessKillResult(
+    effectFlow: Flow<HomeEffect>,
+    context: Context
+) {
+    LaunchedEffect(Unit) {
+        effectFlow.collect {
+            when (it) {
+                HomeEffect.KillProcessFailure -> showToast(
+                    context = context,
+                    text = "Process killing failed!"
+                )
+
+                HomeEffect.KillProcessSuccess -> showToast(
+                    context = context,
+                    text = "Process killed!"
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ProcessInfo(info: ProcessInfo) {
+private fun ProcessesTile(
+    processes: PersistentList<ProcessInfo>,
+    onDeleteClick: (Int) -> Unit
+) {
+    Tile(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(space = 16.dp),
+            modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp)
+        ) {
+            processes.forEach {
+                ProcessInfo(
+                    info = it,
+                    onDeleteClick = { id -> onDeleteClick(id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProcessInfo(
+    info: ProcessInfo,
+    onDeleteClick: (Int) -> Unit,
+) {
     val (badgeColor, badgeTextColor) = info.getBadgeColorAndText()
     val memoryMB = info.memoryVirt.toFloat() / 1024f
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
         modifier = Modifier
             .padding(vertical = 4.dp)
             .fillMaxSize()
@@ -156,7 +228,7 @@ private fun ProcessInfo(info: ProcessInfo) {
             verticalArrangement = Arrangement.Center,
             modifier = Modifier
                 .fillMaxSize()
-                .weight(1f, fill = false)
+                .weight(weight = 1f, fill = false)
         ) {
             Text(
                 text = info.name,
@@ -184,9 +256,62 @@ private fun ProcessInfo(info: ProcessInfo) {
             },
             containerColor = badgeColor
         )
+
+        DeleteIcon(onClick = { onDeleteClick(info.pid) })
     }
 }
 
+@Composable
+private fun ShowDialog(
+    shouldShow: Boolean,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    if (shouldShow) {
+        AlertDialog(
+            onDismissRequest = onCancel,
+            title = {
+                Text("Confirmation")
+            },
+            text = {
+                Text("Do you really want to kill this process?")
+            },
+            confirmButton = {
+                TextButton(onClick = onConfirm) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onCancel) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+
+}
+
+@Composable
+private fun DeleteIcon(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier
+            .clip(shape = CircleShape)
+            .background(color = tertiary.copy(alpha = 0.2f))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = null,
+            tint = tertiary,
+            modifier = Modifier.padding(all = 4.dp)
+        )
+    }
+}
 
 @Composable
 private fun CPUTile(
@@ -373,6 +498,10 @@ fun TemperatureGauge(
     }
 }
 
+private fun showToast(context: Context, text: String) {
+    Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+}
+
 private fun ProcessInfo.getBadgeColorAndText() = when (this.stateDescription) {
     "sleeping" -> backgroundBadgeDisabled to textWeak
     else -> backgroundBadgeEnabled to text
@@ -468,7 +597,8 @@ private fun Preview() {
                 usedRamPercent = 25.8f,
                 usedRamGb = 1.2f to 3.7f
             ),
-            onEvent = {}
+            onEvent = {},
+            effectFlow = emptyFlow()
         )
     }
 }

@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
                 val state = viewModel.state.collectAsStateWithLifecycle().value
                 HomeScreen(
                     state = state,
+                    effectFlow = viewModel.effectFlow,
                     onEvent = viewModel::onEvent
                 )
             }
