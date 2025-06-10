@@ -31,7 +31,8 @@ class HomeViewModel @Inject constructor(
         HomeState(
             cpu = Resource.Loading,
             memory = Resource.Loading,
-            processes = Resource.Loading
+            processes = Resource.Loading,
+            killingProcesses = emptySet(),
         )
     )
     val state = _state.asStateFlow()
@@ -50,7 +51,8 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun startDataRefreshLoop() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
+            delay(200)
             while (true) {
                 fetchData(showLoading = initialInvoke)
                 delay(duration = if (initialInvoke) 0.seconds else REFRESH_DATA_INTERVAL)
@@ -186,6 +188,7 @@ class HomeViewModel @Inject constructor(
             runCatching {
                 repository.killProcess(pid = pid)
             }.onSuccess {
+                updateState { copy(killingProcesses = killingProcesses + pid) }
                 pushEffect(HomeEffect.KillProcessSuccess)
             }.onFailure {
                 pushEffect(HomeEffect.KillProcessFailure)

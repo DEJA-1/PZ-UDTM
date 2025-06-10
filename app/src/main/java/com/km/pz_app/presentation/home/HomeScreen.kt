@@ -40,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -159,6 +160,7 @@ private fun Content(
         state.processes.getResultOrNull()?.let {
             ProcessesTile(
                 processes = it.processes.toPersistentList(),
+                killingProcesses = state.killingProcesses,
                 onDeleteClick = { id ->
                     killProcessDialogId = id
                 }
@@ -214,6 +216,7 @@ private fun HandleProcessKillResult(
 @Composable
 private fun ProcessesTile(
     processes: PersistentList<ProcessInfo>,
+    killingProcesses: Set<Int>,
     onDeleteClick: (Int) -> Unit
 ) {
     Tile(modifier = Modifier.fillMaxWidth()) {
@@ -224,7 +227,8 @@ private fun ProcessesTile(
             processes.forEach {
                 ProcessInfo(
                     info = it,
-                    onDeleteClick = { id -> onDeleteClick(id) }
+                    onDeleteClick = { id -> onDeleteClick(id) },
+                    isMarkedForKill = killingProcesses.contains(it.pid)
                 )
             }
         }
@@ -235,9 +239,11 @@ private fun ProcessesTile(
 private fun ProcessInfo(
     info: ProcessInfo,
     onDeleteClick: (Int) -> Unit,
+    isMarkedForKill: Boolean
 ) {
     val (badgeColor, badgeTextColor) = info.getBadgeColorAndText()
     val memoryMB = info.memoryVirt.toFloat() / 1024f
+    val alpha = if (isMarkedForKill) 0.3f else 1f
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -245,6 +251,7 @@ private fun ProcessInfo(
         modifier = Modifier
             .padding(vertical = 4.dp)
             .fillMaxSize()
+            .alpha(alpha = alpha)
     ) {
         Column(
             verticalArrangement = Arrangement.Center,
@@ -269,7 +276,7 @@ private fun ProcessInfo(
         Badge(
             content = {
                 Text(
-                    text = info.stateDescription,
+                    text = if (isMarkedForKill) "Killing..." else info.stateDescription,
                     color = badgeTextColor,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
@@ -279,7 +286,10 @@ private fun ProcessInfo(
             containerColor = badgeColor
         )
 
-        DeleteIcon(onClick = { onDeleteClick(info.pid) })
+        DeleteIcon(
+            onClick = {
+                if (isMarkedForKill) Unit else onDeleteClick(info.pid)
+            })
     }
 }
 
@@ -664,7 +674,8 @@ private fun Preview() {
                 cpuPercentUsed = 47.5f,
                 cpuTemperature = 42.5f,
                 usedRamPercent = 25.8f,
-                usedRamGb = 1.2f to 3.7f
+                usedRamGb = 1.2f to 3.7f,
+                killingProcesses = emptySet()
             ),
             onEvent = {},
             effectFlow = emptyFlow()

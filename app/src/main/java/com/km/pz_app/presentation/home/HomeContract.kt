@@ -11,6 +11,7 @@ data class HomeState(
     private val cpu: Resource<CpuResponse>,
     private val memory: Resource<MemoryResponse>,
     val processes: Resource<ProcessResponse>,
+    val killingProcesses: Set<Int>,
     private val externalTemperatureResource: Resource<ExternalTemperatureResponse>? = null,
     val cpuPercentUsed: Float? = null,
     val cpuTemperature: Float? = null,
