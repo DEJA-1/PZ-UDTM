@@ -20,9 +20,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.TextSelectionColors
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.CircularProgressIndicator
@@ -90,7 +92,7 @@ private fun RemoteTerminalScreen(
             onSubmitClick = { onEvent(RemoteTerminalEvent.SubmitClick) }
         )
 
-        Tile(modifier = Modifier.weight(weight = 1f)) {
+        Tile(modifier = Modifier.fillMaxSize()) {
             when (state.response) {
                 Resource.Loading -> Box(
                     modifier = Modifier.fillMaxSize(),
@@ -108,6 +110,9 @@ private fun RemoteTerminalScreen(
                 is Resource.Success -> Text(
                     text = state.response.data,
                     color = text,
+                    modifier = Modifier
+                        .padding(all = 24.dp)
+                        .verticalScroll(state = rememberScrollState())
                 )
             }
         }
