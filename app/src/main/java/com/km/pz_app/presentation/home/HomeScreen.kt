@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -52,6 +53,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.compose.composable
 import com.km.pz_app.domain.model.CpuResponse
 import com.km.pz_app.domain.model.CpuStats
 import com.km.pz_app.domain.model.CpuUsage
@@ -59,6 +64,7 @@ import com.km.pz_app.domain.model.MemoryResponse
 import com.km.pz_app.domain.model.ProcessInfo
 import com.km.pz_app.domain.model.ProcessResponse
 import com.km.pz_app.presentation.components.Tile
+import com.km.pz_app.presentation.nav.Destination
 import com.km.pz_app.presentation.utils.Resource
 import com.km.pz_app.ui.theme.PZAPPTheme
 import com.km.pz_app.ui.theme.background
@@ -76,8 +82,21 @@ import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
+fun NavGraphBuilder.homeScreen() {
+    composable<Destination.Home> {
+        val viewModel = hiltViewModel<HomeViewModel>()
+        val state = viewModel.state.collectAsStateWithLifecycle().value
+
+        HomeScreen(
+            state = state,
+            effectFlow = viewModel.effectFlow,
+            onEvent = viewModel::onEvent
+        )
+    }
+}
+
 @Composable
-fun HomeScreen(
+private fun HomeScreen(
     state: HomeState,
     effectFlow: Flow<HomeEffect>,
     onEvent: (HomeEvent) -> Unit,
@@ -90,6 +109,11 @@ fun HomeScreen(
             .background(color = background)
             .padding(horizontal = 24.dp, vertical = 48.dp)
     ) {
+        Button(
+            onClick = { onEvent(HomeEvent.ButtonClick) }
+        ) {
+            Text(text = "Go")
+        }
         when {
             state.isLoading -> CircularProgressIndicator(
                 color = text
@@ -115,7 +139,7 @@ private fun Content(
     state: HomeState,
     onEvent: (HomeEvent) -> Unit,
     effectFlow: Flow<HomeEffect>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     var killProcessDialogId: Int? by rememberSaveable {
@@ -194,7 +218,7 @@ private fun TemperatureChart(state: HomeState) {
 @Composable
 private fun HandleProcessKillResult(
     effectFlow: Flow<HomeEffect>,
-    context: Context
+    context: Context,
 ) {
     LaunchedEffect(Unit) {
         effectFlow.collect {
@@ -217,7 +241,7 @@ private fun HandleProcessKillResult(
 private fun ProcessesTile(
     processes: PersistentList<ProcessInfo>,
     killingProcesses: Set<Int>,
-    onDeleteClick: (Int) -> Unit
+    onDeleteClick: (Int) -> Unit,
 ) {
     Tile(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -239,7 +263,7 @@ private fun ProcessesTile(
 private fun ProcessInfo(
     info: ProcessInfo,
     onDeleteClick: (Int) -> Unit,
-    isMarkedForKill: Boolean
+    isMarkedForKill: Boolean,
 ) {
     val (badgeColor, badgeTextColor) = info.getBadgeColorAndText()
     val memoryMB = info.memoryVirt.toFloat() / 1024f
@@ -327,7 +351,7 @@ private fun ShowDialog(
 @Composable
 private fun DeleteIcon(
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier
@@ -348,7 +372,7 @@ private fun DeleteIcon(
 @Composable
 private fun CPUTile(
     systemPercent: Float?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Tile(modifier = modifier) {
         Column(
@@ -422,7 +446,7 @@ private fun CPUUsageRow(
 private fun RAMTile(
     usedRamPercent: Float?,
     usedRamGb: Pair<Float, Float>?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Tile(modifier = modifier) {
         val animatedRamProgress by animateFloatAsState(
@@ -534,7 +558,7 @@ fun TemperatureGauge(
 private fun TemperatureTypeSelector(
     selected: TemperatureType,
     onSelect: (TemperatureType) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val types = listOf(TemperatureType.Internal, TemperatureType.External)
 

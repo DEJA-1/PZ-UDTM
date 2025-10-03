@@ -7,6 +7,8 @@ import com.km.pz_app.domain.model.CpuResponse
 import com.km.pz_app.domain.model.CpuStats
 import com.km.pz_app.domain.model.MemoryResponse
 import com.km.pz_app.domain.repository.ISystemRepository
+import com.km.pz_app.presentation.nav.Destination
+import com.km.pz_app.presentation.nav.navigator.INavigator
 import com.km.pz_app.presentation.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +27,8 @@ private val REFRESH_DATA_INTERVAL = 6.seconds
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: ISystemRepository
+    private val repository: ISystemRepository,
+    private val navigator: INavigator,
 ) : ViewModel() {
     private val _state = MutableStateFlow(
         HomeState(
@@ -47,6 +50,7 @@ class HomeViewModel @Inject constructor(
     fun onEvent(event: HomeEvent) {
         when (event) {
             is HomeEvent.ProcessKillClick -> handleProcessKill(pid = event.pid)
+            HomeEvent.ButtonClick -> navigator.pushNavigationEvent(Destination.RemoteTerminal)
         }
     }
 

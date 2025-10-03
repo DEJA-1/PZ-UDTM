@@ -26,6 +26,7 @@ data class HomeState(
 
 sealed interface HomeEvent {
     data class ProcessKillClick(val pid: Int) : HomeEvent
+    data object ButtonClick : HomeEvent
 }
 
 sealed interface HomeEffect {
