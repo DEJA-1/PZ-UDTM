@@ -2,6 +2,7 @@ package com.km.pz_app.presentation.remoteTerminal
 
 import androidx.lifecycle.ViewModel
 import com.km.pz_app.presentation.nav.navigator.INavigator
+import com.km.pz_app.presentation.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,19 +14,32 @@ class RemoteTerminalViewModel @Inject constructor(
     private val navigator: INavigator,
 ) : ViewModel() {
     private val _state = MutableStateFlow(
-        RemoteTerminalState(inputValue = "")
+        RemoteTerminalState(
+            inputValue = "",
+            response = Resource.Loading,
+        )
     )
     val state = _state.asStateFlow()
 
     fun onEvent(event: RemoteTerminalEvent) {
         when (event) {
-            is RemoteTerminalEvent.InputValueChange -> handleInputValueChange(
-                newValue = event.newValue
-            )
+            is RemoteTerminalEvent.InputValueChange -> handleInputValueChange(newValue = event.newValue)
+            RemoteTerminalEvent.SubmitClick -> handleSubmitClick()
         }
     }
 
     private fun handleInputValueChange(newValue: String) {
         _state.update { it.copy(inputValue = newValue) }
+    }
+
+    private fun handleSubmitClick() {
+        _state.update {
+            it.copy(inputValue = "")
+        }
+        fetchResponse()
+    }
+
+    private fun fetchResponse() {
+
     }
 }
