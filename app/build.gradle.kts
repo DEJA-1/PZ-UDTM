@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     kotlin("kapt")
+    alias(libs.plugins.kotlin.serialization)
 }
 hilt {
     enableAggregatingTask = false
@@ -76,4 +77,5 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.androidx.ui.text.google.fonts)
+    implementation(libs.kotlinx.serialization.json)
 }
