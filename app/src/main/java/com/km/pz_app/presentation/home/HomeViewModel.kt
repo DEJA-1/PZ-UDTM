@@ -30,6 +30,7 @@ class HomeViewModel @Inject constructor(
     private val repository: ISystemRepository,
     private val navigator: INavigator,
 ) : ViewModel() {
+
     private val _state = MutableStateFlow(
         HomeState(
             cpu = Resource.Loading,
@@ -40,6 +41,7 @@ class HomeViewModel @Inject constructor(
     )
     val state = _state.asStateFlow()
     private var initialInvoke = true
+
     private val effectChannel: Channel<HomeEffect> = Channel(Channel.CONFLATED)
     val effectFlow = effectChannel.receiveAsFlow()
 
@@ -114,7 +116,6 @@ class HomeViewModel @Inject constructor(
                         usedRamGb = gbPair
                     )
                 }
-                Log.d("test", memoryResponse.toString())
             }.onFailure {
                 updateState {
                     copy(memory = Resource.Error(message = "Error: ${it.message}"))

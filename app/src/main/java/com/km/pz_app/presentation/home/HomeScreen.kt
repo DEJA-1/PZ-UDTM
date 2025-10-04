@@ -145,7 +145,11 @@ private fun Content(
     var killProcessDialogId: Int? by rememberSaveable {
         mutableStateOf(null)
     }
-    HandleProcessKillResult(effectFlow, context)
+
+    HandleProcessKillResult(
+        effectFlow = effectFlow,
+        context = context,
+    )
 
     Column(
         verticalArrangement = Arrangement.spacedBy(space = 16.dp),
