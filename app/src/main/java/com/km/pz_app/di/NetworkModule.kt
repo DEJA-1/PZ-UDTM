@@ -1,6 +1,9 @@
 package com.km.pz_app.di
 
 import com.km.pz_app.data.dataProvider.SystemStatusApi
+import com.km.pz_app.data.dataProvider.remoteTerminal.ITerminalWebSocketApi
+import com.km.pz_app.data.dataProvider.remoteTerminal.TerminalWebSocketApi
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
