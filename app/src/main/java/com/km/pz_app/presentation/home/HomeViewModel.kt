@@ -3,6 +3,7 @@ package com.km.pz_app.presentation.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.km.pz_app.data.repository.FakeSystemRepository
 import com.km.pz_app.domain.model.CpuResponse
 import com.km.pz_app.domain.model.CpuStats
 import com.km.pz_app.domain.model.MemoryResponse
@@ -52,7 +53,7 @@ class HomeViewModel @Inject constructor(
     fun onEvent(event: HomeEvent) {
         when (event) {
             is HomeEvent.ProcessKillClick -> handleProcessKill(pid = event.pid)
-            HomeEvent.ButtonClick -> navigator.pushNavigationEvent(Destination.RemoteTerminal)
+            HomeEvent.RemoteTerminalClick -> navigator.pushNavigationEvent(Destination.RemoteTerminal)
         }
     }
 

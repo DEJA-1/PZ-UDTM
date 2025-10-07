@@ -11,7 +11,7 @@ class TerminalWebSocketApi @Inject constructor(
     private val okHttp: OkHttpClient
 ) : ITerminalWebSocketApi {
 
-    private val wsUrl = "ws://10.0.1.2:3000/terminal/ws"
+    private val wsUrl = "ws://10.0.2.2:3000/terminal/ws"
 
     private var ws: WebSocket? = null
 
