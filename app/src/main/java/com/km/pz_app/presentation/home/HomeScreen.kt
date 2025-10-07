@@ -17,17 +17,20 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -107,13 +110,7 @@ private fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(color = background)
-            .padding(horizontal = 24.dp, vertical = 48.dp)
     ) {
-        Button(
-            onClick = { onEvent(HomeEvent.ButtonClick) }
-        ) {
-            Text(text = "Go")
-        }
         when {
             state.isLoading -> CircularProgressIndicator(
                 color = text
@@ -151,47 +148,63 @@ private fun Content(
         context = context,
     )
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(space = 16.dp),
-        modifier = modifier
-            .padding(bottom = 16.dp)
-            .fillMaxSize()
-            .verticalScroll(state = rememberScrollState())
-    ) {
-        ShowDialog(
-            shouldShow = killProcessDialogId != null,
-            onConfirm = {
-                onEvent(HomeEvent.ProcessKillClick(killProcessDialogId!!))
-                killProcessDialogId = null
-            },
-            onCancel = {
-                killProcessDialogId = null
-            }
-        )
-
-        TemperatureChart(state)
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
-            modifier = Modifier.fillMaxWidth()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(space = 16.dp),
+            modifier = modifier
+                .padding(horizontal = 24.dp, vertical = 48.dp)
+                .padding(bottom = 16.dp)
+                .fillMaxSize()
+                .verticalScroll(state = rememberScrollState())
         ) {
-            RAMTile(
-                usedRamPercent = state.usedRamPercent,
-                usedRamGb = state.usedRamGb,
-                modifier = Modifier.weight(1f)
-            )
-            CPUTile(
-                systemPercent = state.cpuPercentUsed,
-                modifier = Modifier.weight(1f)
-            )
-        }
-        state.processes.getResultOrNull()?.let {
-            ProcessesTile(
-                processes = it.processes.toPersistentList(),
-                killingProcesses = state.killingProcesses,
-                onDeleteClick = { id ->
-                    killProcessDialogId = id
+            ShowDialog(
+                shouldShow = killProcessDialogId != null,
+                onConfirm = {
+                    onEvent(HomeEvent.ProcessKillClick(killProcessDialogId!!))
+                    killProcessDialogId = null
+                },
+                onCancel = {
+                    killProcessDialogId = null
                 }
+            )
+
+            TemperatureChart(state)
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                RAMTile(
+                    usedRamPercent = state.usedRamPercent,
+                    usedRamGb = state.usedRamGb,
+                    modifier = Modifier.weight(1f)
+                )
+                CPUTile(
+                    systemPercent = state.cpuPercentUsed,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            state.processes.getResultOrNull()?.let {
+                ProcessesTile(
+                    processes = it.processes.toPersistentList(),
+                    killingProcesses = state.killingProcesses,
+                    onDeleteClick = { id ->
+                        killProcessDialogId = id
+                    }
+                )
+            }
+        }
+
+        FloatingActionButton(
+            onClick = { onEvent(HomeEvent.RemoteTerminalClick) },
+            modifier = Modifier
+                .align(alignment = Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(all = 24.dp)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = "Akcja FAB"
             )
         }
     }

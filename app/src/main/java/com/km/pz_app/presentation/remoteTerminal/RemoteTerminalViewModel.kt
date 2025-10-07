@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.km.pz_app.data.dataProvider.remoteTerminal.WebSocketStatus
 import com.km.pz_app.domain.repository.IWebSocketRepository
-import com.km.pz_app.presentation.nav.navigator.INavigator
 import com.km.pz_app.presentation.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +12,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -63,7 +63,12 @@ class RemoteTerminalViewModel @Inject constructor(
         val prompt = state.value.inputValue.trim()
         if (prompt.isBlank()) return
 
-        _state.update { it.copy(inputValue = "", response = Resource.Loading) }
+        _state.update {
+            it.copy(
+                inputValue = "",
+                response = Resource.Loading
+            )
+        }
 
         viewModelScope.launch(Dispatchers.IO) {
             val sentSuccessfully = webSocketRepository.terminalSend("$prompt\n")
@@ -82,9 +87,18 @@ class RemoteTerminalViewModel @Inject constructor(
 
     private fun observeResponse() {
         viewModelScope.launch(Dispatchers.Default) {
-            webSocketRepository.terminalMessages.collect { message ->
-                _state.update { it.copy(response = Resource.Success(message)) }
-            }
+            webSocketRepository.terminalMessages
+                .map { raw -> sanitizeAnsi(raw) }
+                .collect { message ->
+                    _state.update { current ->
+                        val prev = current.response.getResultOrNull().orEmpty()
+                        val combined = buildString {
+                            append(prev)
+                            append(message)
+                        }
+                        current.copy(response = Resource.Success(combined))
+                    }
+                }
         }
     }
 
@@ -121,6 +135,24 @@ class RemoteTerminalViewModel @Inject constructor(
             )
         }
         Log.w("Error", status.message.toString())
+    }
+
+    private fun sanitizeAnsi(input: String?): String {
+        if (input.isNullOrEmpty()) return input.orEmpty()
+        var s = input.replace("\r\n", "\n")
+
+        val oscRegex = Regex("""\u001B\][0-9]{1,4};[^\u0007\u001B]*?(\u0007|\u001B\\)""")
+        s = oscRegex.replace(s, "")
+
+        val csiRegex = Regex("""\u001B\[[0-9;?]*[ -/]*[@-~]""")
+        s = csiRegex.replace(s, "")
+
+        val sosPmApcRegex = Regex("""\u001B_[\s\S]*?\u001B\\""")
+        s = sosPmApcRegex.replace(s, "")
+
+        s = s.replace("\u0007", "")
+
+        return s
     }
 
     override fun onCleared() {

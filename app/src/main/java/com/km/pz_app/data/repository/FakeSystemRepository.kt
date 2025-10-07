@@ -21,9 +21,9 @@ class FakeSystemRepository @Inject constructor() : ISystemRepository {
     private var totalRam = 3882924L
     private var currentUsedRam = 1500000L
     private val states = listOf("sleeping", "running", "zombie", "interrupt")
-    private val names = listOf("systemd", "kworker", "irq/51", "node")
+    private val names = listOf("systemd", "kworker", "irq/51", "node", "node", "node", "node")
 
-    private val processes = (1..4).map {
+    private val processes = (1..6).map {
         ProcessInfo(
             pid = it,
             name = names.random(),
