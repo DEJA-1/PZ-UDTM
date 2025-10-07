@@ -3,8 +3,11 @@ mod controller;
 mod data_source;
 mod handlers;
 mod models;
+mod terminal;
 
 use axum::{
+    extract::ws::WebSocketUpgrade,
+    response::IntoResponse,
     routing::{get, post},
     Router,
 };
@@ -118,6 +121,7 @@ async fn main() {
         .route("/control/process/kill", post(handlers::kill_process))
         .route("/control/system/shutdown", post(handlers::shutdown_system))
         .route("/control/system/reboot", post(handlers::reboot_system))
+        .route("/terminal/ws", get(terminal_ws_handler))
         .with_state(shared_state);
 
     // --- Run the Server ---
@@ -135,4 +139,16 @@ async fn main() {
     axum::serve(listener, app.into_make_service())
         .await
         .expect("Failed to start server");
+}
+
+async fn terminal_ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
+    info!("/terminal/ws: upgrade requested");
+    ws.on_upgrade(|socket| async move {
+        info!("/terminal/ws: upgraded; starting PTY bridge");
+        if let Err(e) = terminal::bridge_ws_to_pty(socket).await {
+            error!("/terminal/ws: bridge exited with error: {}", e);
+        } else {
+            info!("/terminal/ws: bridge finished cleanly");
+        }
+    })
 }
