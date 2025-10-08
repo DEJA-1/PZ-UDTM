@@ -1,6 +1,6 @@
 # Programowanie interfejsów mobilnych
 
-Dokumentacja:
+Rozszerzona dokumentacja (skrócona wersja w module app):
 
 https://www.overleaf.com/read/qxfhnkbsxzyt#de7b5a
 
