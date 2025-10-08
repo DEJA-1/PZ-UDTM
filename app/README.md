@@ -1,54 +1,58 @@
 # PZ System Monitor
 
-Aplikacja mobilna umożliwiająca zdalne monitorowanie zasobów systemowych urządzenia Raspberry Pi.
-Użytkownik ma możliwość podglądu temperatury CPU, zużycia pamięci RAM, wykorzystania CPU oraz listy
-aktywnych procesów.
+Aplikacja mobilna umożliwiająca zdalne monitorowanie zasobów systemowych urządzenia **Raspberry Pi** z poziomu Androida.
+Użytkownik ma podgląd temperatury CPU, zużycia RAM/CPU oraz listy aktywnych procesów. Za pomocą WebSocket komunikuje się z serwerem, co umożliwia zastosowanie Remote Terminal.
+
+---
 
 ## Opis
 
-Aplikacja łączy się z backendem udostępniającym dane systemowe za pomocą REST API. Dane są
-cyklicznie odświeżane, a UI prezentuje je w czytelnej formie z wykorzystaniem komponentów Jetpack
-Compose.
+Aplikacja łączy się z backendem (System Status API), który udostępnia dane systemowe w formacie **JSON**.
+Dane są cyklicznie odświeżane co kilka sekund i prezentowane w czytelnym, dynamicznym UI zbudowanym w **Jetpack Compose**.
+
+---
 
 ## Funkcjonalności
 
-- Automatyczne odświeżanie danych co n sekund
-- Wizualizacja temperatury CPU
-- Dynamiczne paski zużycia CPU i RAM z animacją oraz zmianą koloru
-- Lista procesów z informacjami o nazwie, stanie, zużyciu pamięci i czasie CPU
-- Obsługa stanów ładowania oraz błędów połączenia
-- Tryb testowy z danymi generowanymi lokalnie (`FakeSystemRepository`)
+* Automatyczne odświeżanie danych co kilka sekund.
+* Wizualizacja temperatury CPU.
+* Dynamiczne paski zużycia CPU i RAM (animacje, kolory zależne od obciążenia).
+* Lista procesów z informacjami o nazwie, stanie (*sleeping*, *running*) i zużyciu RAM.
+* Obsługa stanów: **Loading**, **Error**, **Success** (brak danych z serwera, błędy połączenia).
+* Zdalne zakończenie (ubicie) wybranego procesu.
+* Przełączanie widoku temperatury: **Internal / External**.
+* **Tryb testowy** z danymi lokalnymi (`FakeSystemRepository`) — bez działającego backendu.
+* Remote terminal - komunikacja z terminalem Raspberry PI
+
+---
 
 ## Technologie
 
-- Kotlin
-- Jetpack Compose
-- Material3
-- Kotlin Coroutines
-- Hilt (Dependency Injection)
-- REST API (JSON)
+* **Kotlin**, **Jetpack Compose**, **Material 3**
+* **Kotlin Coroutines**
+* **Hilt** (Dependency Injection)
+* **Retrofit** + **OkHttp** (REST/JSON)
+* **WebSocket**
 
-## Architektura
+---
 
-- `ViewModel` zarządza stanem ekranu i logiką pobierania danych
-- `HomeState` przechowuje bieżący stan UI
-- `Resource` jest generycznym wrapperem obsługującym stany: `Success`, `Error`, `Loading`
-- `FakeSystemRepository` symuluje backend na potrzeby developmentu
+## Architektura aplikacji
 
-## Backend API
+W aplikacji mobilnej zastosowano architekturę **MVI (Model–View–Intent)**, która ułatwia zarządzanie stanem oraz zwiększa czytelność kodu.
+**Model** w tej architekturze to stan aplikacji (np. zużycie CPU, pamięci RAM, procesy), **View** to interfejs użytkownika (UI), a **Intent** to zdarzenia inicjowane przez użytkownika.
 
-Backend (System Status API) powinien działać na urządzeniu z systemem Linux (np. Raspberry Pi).
-Komunikuje się poprzez protokół HTTP i udostępnia następujące endpointy:
+Aplikacja została podzielona na trzy główne warstwy:
 
-- `GET /cpu` – dane o temperaturze i wykorzystaniu CPU
-- `GET /memory` – dane o pamięci RAM
-- `GET /processes` – lista aktywnych procesów
+* **Data layer** – odpowiedzialna za komunikację z backendem (REST API) oraz dostarczanie danych do aplikacji. W tej warstwie znajdują się:
 
-Przykładowe zapytanie:
+  * `Retrofit` **client** – obsługuje zapytania HTTP.
+  * **Repository** – implementuje interfejs z warstwy `domain` i zarządza źródłami danych (np. API, komunikacja WebSocket, symulacja danych w trybie testowym).
 
-    http://<adres-ip-raspberry>:3000/cpu
+* **Domain layer** – zawiera logikę biznesową oraz definicje interfejsów (np. `ISystemRepository`, `IWebSocketRepository`). Warstwa ta jest niezależna od frameworków i platform, co umożliwia łatwe testowanie logiki aplikacji.
 
-## Uruchomienie
+* **Presentation layer** – odpowiada za interfejs użytkownika oraz zarządzanie stanem aplikacji. W tej warstwie znajdują się:
 
-   ```bash
-   git clone https://github.com/DEJA-1/PZ-UDTM.git
+  * **ViewModel** – zarządza stanem widoku (`HomeState`), pobiera dane z warstwy `domain`, cyklicznie odświeża dane oraz przetwarza je dla UI.
+  * **HomeState** – model stanu widoku, zawiera dane dotyczące CPU, RAM, procesów oraz statusy ładowania i błędów.
+  * **Resource wrapper** – generyczna klasa obsługująca stany danych: `Success`, `Error`, `Loading`.
+  * **Composable functions** – budują interfejs użytkownika w oparciu o Jetpack Compose, reagując na zmiany stanu.
