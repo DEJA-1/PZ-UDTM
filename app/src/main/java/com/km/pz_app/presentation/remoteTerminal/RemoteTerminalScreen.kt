@@ -12,8 +12,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -32,18 +34,25 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import com.km.pz_app.presentation.components.RaspberryPiSelector
 import com.km.pz_app.presentation.components.Tile
 import com.km.pz_app.presentation.nav.Destination
 import com.km.pz_app.presentation.utils.Resource
+import com.km.pz_app.ui.theme.PZAPPTheme
 import com.km.pz_app.ui.theme.background
 import com.km.pz_app.ui.theme.backgroundSecondary
 import com.km.pz_app.ui.theme.backgroundTertiary
@@ -52,6 +61,7 @@ import com.km.pz_app.ui.theme.tertiary
 import com.km.pz_app.ui.theme.text
 import com.km.pz_app.ui.theme.textWeak
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 fun NavGraphBuilder.remoteTerminalScreen() {
     composable<Destination.RemoteTerminal> {
@@ -80,19 +90,30 @@ private fun RemoteTerminalScreen(
     )
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(space = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(space = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
             .background(color = background)
-            .padding(horizontal = 24.dp, vertical = 84.dp)
+            .padding(horizontal = 24.dp, vertical = 48.dp)
     ) {
+        var raspberryPiSelected by rememberSaveable { mutableIntStateOf(0) }
+
+        RaspberryPiSelector(
+            count = 3,
+            selectedIndex = raspberryPiSelected,
+            onSelect = { raspberryPiSelected = it },
+            modifier = Modifier.fillMaxWidth()
+        )
+
         Input(
             inputValue = state.inputValue,
             enabled = state.isConnected,
             onValueChange = { onEvent(RemoteTerminalEvent.InputValueChange(it)) },
             onSubmitClick = { onEvent(RemoteTerminalEvent.SubmitClick) }
         )
+
+        Spacer(modifier = Modifier.height(height = 16.dp))
 
         Tile(modifier = Modifier.fillMaxSize()) {
             if (state.isConnecting) {
@@ -248,3 +269,20 @@ private fun getInputColors() = OutlinedTextFieldDefaults.colors().copy(
     disabledSuffixColor = textWeak.copy(alpha = 0.5f),
     errorSuffixColor = tertiary,
 )
+
+@Composable
+@Preview(showBackground = true)
+private fun Preview() {
+    PZAPPTheme {
+        RemoteTerminalScreen(
+            state = RemoteTerminalState(
+                inputValue = "",
+                response = Resource.Success("avbcd"),
+                isConnecting = false,
+                isConnected = true,
+            ),
+            onEvent = {},
+            effectFlow = emptyFlow()
+        )
+    }
+}

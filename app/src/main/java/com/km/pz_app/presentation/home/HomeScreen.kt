@@ -39,6 +39,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -66,6 +67,7 @@ import com.km.pz_app.domain.model.CpuUsage
 import com.km.pz_app.domain.model.MemoryResponse
 import com.km.pz_app.domain.model.ProcessInfo
 import com.km.pz_app.domain.model.ProcessResponse
+import com.km.pz_app.presentation.components.RaspberryPiSelector
 import com.km.pz_app.presentation.components.Tile
 import com.km.pz_app.presentation.nav.Destination
 import com.km.pz_app.presentation.utils.Resource
@@ -142,6 +144,7 @@ private fun Content(
     var killProcessDialogId: Int? by rememberSaveable {
         mutableStateOf(null)
     }
+    var raspberryPiSelected by rememberSaveable { mutableIntStateOf(0) }
 
     HandleProcessKillResult(
         effectFlow = effectFlow,
@@ -166,6 +169,12 @@ private fun Content(
                 onCancel = {
                     killProcessDialogId = null
                 }
+            )
+
+            RaspberryPiSelector(
+                count = 3,
+                selectedIndex = raspberryPiSelected,
+                onSelect = { raspberryPiSelected = it }
             )
 
             TemperatureChart(state)

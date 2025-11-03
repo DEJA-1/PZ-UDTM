@@ -28,10 +28,11 @@ private val REFRESH_DATA_INTERVAL = 6.seconds
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: ISystemRepository,
+//    private val repository: ISystemRepository,
     private val navigator: INavigator,
 ) : ViewModel() {
 
+    private val repository = FakeSystemRepository()
     private val _state = MutableStateFlow(
         HomeState(
             cpu = Resource.Loading,
