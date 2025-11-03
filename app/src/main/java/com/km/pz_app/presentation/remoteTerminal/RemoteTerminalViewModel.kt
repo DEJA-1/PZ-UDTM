@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.km.pz_app.data.dataProvider.remoteTerminal.WebSocketStatus
+import com.km.pz_app.data.repository.SelectedRaspberryRepository
 import com.km.pz_app.domain.repository.IWebSocketRepository
 import com.km.pz_app.presentation.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class RemoteTerminalViewModel @Inject constructor(
     private val webSocketRepository: IWebSocketRepository,
+    private val raspberryRepository: SelectedRaspberryRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -46,6 +48,7 @@ class RemoteTerminalViewModel @Inject constructor(
         when (event) {
             RemoteTerminalEvent.SubmitClick -> handleSubmitClick()
             is RemoteTerminalEvent.InputValueChange -> handleInputValueChange(newValue = event.newValue)
+            is RemoteTerminalEvent.RaspberryIndexChange -> handleRaspberryIndexChange(index = event.index)
         }
     }
 
@@ -77,6 +80,12 @@ class RemoteTerminalViewModel @Inject constructor(
                     effectChannel.trySend(RemoteTerminalEffect.ShowToast("Brak połączenia"))
                 }
             }
+        }
+    }
+
+    private fun handleRaspberryIndexChange(index: Int) {
+        viewModelScope.launch {
+            raspberryRepository.setSelectedIndex(index)
         }
     }
 

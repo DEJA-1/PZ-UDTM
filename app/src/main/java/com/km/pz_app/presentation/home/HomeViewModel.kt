@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.km.pz_app.data.repository.FakeSystemRepository
+import com.km.pz_app.data.repository.SelectedRaspberryRepository
 import com.km.pz_app.domain.model.CpuResponse
 import com.km.pz_app.domain.model.CpuStats
 import com.km.pz_app.domain.model.MemoryResponse
@@ -30,6 +31,7 @@ private val REFRESH_DATA_INTERVAL = 6.seconds
 class HomeViewModel @Inject constructor(
 //    private val repository: ISystemRepository,
     private val navigator: INavigator,
+    private val raspberryRepository: SelectedRaspberryRepository,
 ) : ViewModel() {
 
     private val repository = FakeSystemRepository()
@@ -53,8 +55,9 @@ class HomeViewModel @Inject constructor(
 
     fun onEvent(event: HomeEvent) {
         when (event) {
-            is HomeEvent.ProcessKillClick -> handleProcessKill(pid = event.pid)
             HomeEvent.RemoteTerminalClick -> navigator.pushNavigationEvent(Destination.RemoteTerminal)
+            is HomeEvent.ProcessKillClick -> handleProcessKill(pid = event.pid)
+            is HomeEvent.RaspberryIndexChange -> handleRaspberryIndexChange(index = event.index)
         }
     }
 
@@ -201,6 +204,12 @@ class HomeViewModel @Inject constructor(
                 pushEffect(HomeEffect.KillProcessFailure)
                 Log.w("Error", it.message.toString())
             }
+        }
+    }
+
+    private fun handleRaspberryIndexChange(index: Int) {
+        viewModelScope.launch {
+            raspberryRepository.setSelectedIndex(index)
         }
     }
 

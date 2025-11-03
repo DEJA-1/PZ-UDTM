@@ -27,6 +27,7 @@ data class HomeState(
 sealed interface HomeEvent {
     data class ProcessKillClick(val pid: Int) : HomeEvent
     data object RemoteTerminalClick : HomeEvent
+    data class RaspberryIndexChange(val index: Int): HomeEvent
 }
 
 sealed interface HomeEffect {

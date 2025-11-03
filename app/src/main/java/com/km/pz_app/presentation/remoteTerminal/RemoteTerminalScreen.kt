@@ -50,6 +50,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.km.pz_app.presentation.components.RaspberryPiSelector
 import com.km.pz_app.presentation.components.Tile
+import com.km.pz_app.presentation.home.HomeEvent
 import com.km.pz_app.presentation.nav.Destination
 import com.km.pz_app.presentation.utils.Resource
 import com.km.pz_app.ui.theme.PZAPPTheme
@@ -102,7 +103,10 @@ private fun RemoteTerminalScreen(
         RaspberryPiSelector(
             count = 3,
             selectedIndex = raspberryPiSelected,
-            onSelect = { raspberryPiSelected = it },
+            onSelect = {
+                raspberryPiSelected = it
+                onEvent(RemoteTerminalEvent.RaspberryIndexChange(it))
+            },
             modifier = Modifier.fillMaxWidth()
         )
 

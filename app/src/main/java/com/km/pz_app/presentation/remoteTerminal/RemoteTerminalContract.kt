@@ -1,5 +1,6 @@
 package com.km.pz_app.presentation.remoteTerminal
 
+import com.km.pz_app.presentation.home.HomeEvent
 import com.km.pz_app.presentation.utils.Resource
 
 data class RemoteTerminalState(
@@ -12,6 +13,7 @@ data class RemoteTerminalState(
 sealed interface RemoteTerminalEvent {
     data class InputValueChange(val newValue: String) : RemoteTerminalEvent
     data object SubmitClick : RemoteTerminalEvent
+    data class RaspberryIndexChange(val index: Int): RemoteTerminalEvent
 }
 
 sealed interface RemoteTerminalEffect {

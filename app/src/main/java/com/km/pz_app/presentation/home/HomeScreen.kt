@@ -174,7 +174,10 @@ private fun Content(
             RaspberryPiSelector(
                 count = 3,
                 selectedIndex = raspberryPiSelected,
-                onSelect = { raspberryPiSelected = it }
+                onSelect = {
+                    raspberryPiSelected = it
+                    onEvent(HomeEvent.RaspberryIndexChange(it))
+                }
             )
 
             TemperatureChart(state)

@@ -1,5 +1,6 @@
 package com.km.pz_app.di
 
+import com.km.pz_app.data.dataProvider.RaspberryAddressProvider
 import com.km.pz_app.data.dataProvider.SystemStatusApi
 import com.km.pz_app.data.dataProvider.remoteTerminal.ITerminalWebSocketApi
 import com.km.pz_app.data.dataProvider.remoteTerminal.TerminalWebSocketApi
@@ -18,8 +19,6 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "http://10.0.1.2:3000"
-
     @Provides
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor =
@@ -36,12 +35,17 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(client: OkHttpClient): Retrofit =
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
+    suspend fun provideRetrofit(
+        client: OkHttpClient,
+        addressProvider: RaspberryAddressProvider
+    ): Retrofit {
+        val baseUrl = addressProvider.httpBaseUrl()
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
             .addConverterFactory(GsonConverterFactory.create())
             .client(client)
             .build()
+    }
 
     @Provides
     @Singleton

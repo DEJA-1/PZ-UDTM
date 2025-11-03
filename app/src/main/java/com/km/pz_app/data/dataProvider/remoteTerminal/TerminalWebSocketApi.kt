@@ -1,23 +1,25 @@
 package com.km.pz_app.data.dataProvider.remoteTerminal
 
+import com.km.pz_app.data.dataProvider.RaspberryAddressProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.launch
 import okhttp3.*
 import okio.ByteString
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class TerminalWebSocketApi @Inject constructor(
-    private val okHttp: OkHttpClient
+    private val okHttp: OkHttpClient,
+    private val addressProvider: RaspberryAddressProvider
 ) : ITerminalWebSocketApi {
-
-    private val wsUrl = "ws://10.0.2.2:3000/terminal/ws"
-
     private var ws: WebSocket? = null
 
-    private val _messages = MutableSharedFlow<String>(
-        replay = 0, extraBufferCapacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
+    private val _messages = MutableSharedFlow<String>()
     override val messages: SharedFlow<String> = _messages
 
     private val _connectivity = MutableSharedFlow<WebSocketStatus>(
@@ -28,32 +30,37 @@ class TerminalWebSocketApi @Inject constructor(
     override fun connect() {
         if (ws != null) return
 
-        val request = Request.Builder()
-            .url(wsUrl)
-            .build()
-        ws = okHttp.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                _connectivity.tryEmit(WebSocketStatus.Open)
-            }
+        CoroutineScope(Dispatchers.IO).launch {
+            val url = addressProvider.wsUrl()
 
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                _messages.tryEmit(text)
-            }
+            val request = Request.Builder()
+                .url(url)
+                .build()
+            ws = okHttp.newWebSocket(request, object : WebSocketListener() {
+                override fun onOpen(webSocket: WebSocket, response: Response) {
+                    _connectivity.tryEmit(WebSocketStatus.Open)
+                }
 
-            override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                _messages.tryEmit(bytes.utf8())
-            }
+                override fun onMessage(webSocket: WebSocket, text: String) {
+                    _messages.tryEmit(text)
+                }
 
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                _connectivity.tryEmit(WebSocketStatus.Closed(code, reason))
-                ws = null
-            }
+                override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+                    _messages.tryEmit(bytes.utf8())
+                }
 
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                _connectivity.tryEmit(WebSocketStatus.Failure(t.message))
-                ws = null
+                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                    _connectivity.tryEmit(WebSocketStatus.Closed(code, reason))
+                    ws = null
+                }
+
+                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                    _connectivity.tryEmit(WebSocketStatus.Failure(t.message))
+                    ws = null
+                }
             }
-        })
+            )
+        }
     }
 
     override fun send(command: String): Boolean = ws?.send(command) ?: false
