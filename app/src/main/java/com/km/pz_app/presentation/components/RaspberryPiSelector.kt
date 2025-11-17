@@ -37,10 +37,10 @@ fun RaspberryPiSelector(
     modifier: Modifier = Modifier
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(space = 8.dp),
         modifier = modifier
-            .horizontalScroll(rememberScrollState())
-            .padding(4.dp)
+            .horizontalScroll(state = rememberScrollState())
+            .padding(all = 4.dp)
     ) {
         repeat(count) { index ->
             val isSelected = index == selectedIndex
@@ -56,9 +56,9 @@ fun RaspberryPiSelector(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(animatedBackgroundColor)
+                    .size(size = 48.dp)
+                    .clip(shape = CircleShape)
+                    .background(color = animatedBackgroundColor)
                     .clickable { onSelect(index) }
                     .border(
                         width = 1.dp,

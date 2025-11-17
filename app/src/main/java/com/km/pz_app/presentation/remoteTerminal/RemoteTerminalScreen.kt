@@ -1,7 +1,6 @@
 package com.km.pz_app.presentation.remoteTerminal
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
@@ -50,9 +49,9 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.km.pz_app.presentation.components.RaspberryPiSelector
 import com.km.pz_app.presentation.components.Tile
-import com.km.pz_app.presentation.home.HomeEvent
 import com.km.pz_app.presentation.nav.Destination
 import com.km.pz_app.presentation.utils.Resource
+import com.km.pz_app.presentation.utils.showToast
 import com.km.pz_app.ui.theme.PZAPPTheme
 import com.km.pz_app.ui.theme.background
 import com.km.pz_app.ui.theme.backgroundSecondary
@@ -121,46 +120,69 @@ private fun RemoteTerminalScreen(
 
         Tile(modifier = Modifier.fillMaxSize()) {
             if (state.isConnecting) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Nawiązywanie połączenia z serwerem..",
-                        color = text,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                Connecting()
             } else {
-                when (state.response) {
-                    Resource.Loading -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = text)
-                    }
-
-                    is Resource.Error -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Coś poszło nie tak",
-                            color = text,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-
-                    is Resource.Success -> Text(
-                        text = state.response.data,
-                        color = text,
-                        modifier = Modifier
-                            .padding(all = 24.dp)
-                            .verticalScroll(state = rememberScrollState())
-                    )
-                }
+                ResponseContent(state)
             }
         }
+    }
+}
+
+@Composable
+private fun ResponseContent(state: RemoteTerminalState) {
+    when (state.response) {
+        Resource.Loading -> ResponseLoading()
+        is Resource.Error -> ResponseError()
+        is Resource.Success -> ResponseSuccess(state.response)
+    }
+}
+
+@Composable
+private fun ResponseSuccess(response: Resource.Success<String>) {
+    Text(
+        text = response.data,
+        color = text,
+        modifier = Modifier
+            .padding(all = 24.dp)
+            .verticalScroll(state = rememberScrollState())
+    )
+}
+
+@Composable
+private fun ResponseError() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Coś poszło nie tak",
+            color = text,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+@Composable
+private fun ResponseLoading() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(color = text)
+    }
+}
+
+@Composable
+private fun Connecting() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Nawiązywanie połączenia z serwerem..",
+            color = text,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 
@@ -172,8 +194,10 @@ private fun observeEffect(
     LaunchedEffect(Unit) {
         effectFlow.collect { effect ->
             when (effect) {
-                is RemoteTerminalEffect.ShowToast ->
-                    Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                is RemoteTerminalEffect.ShowToast -> showToast(
+                    context = context,
+                    text = effect.message
+                )
             }
         }
     }
@@ -226,8 +250,7 @@ private fun Input(
 }
 
 @Composable
-private fun
-        getPlaceholder(enabled: Boolean) = if (enabled) {
+private fun getPlaceholder(enabled: Boolean) = if (enabled) {
     "Wprowadź polecenie"
 } else {
     "Poczekaj na połączenie z serwerem"

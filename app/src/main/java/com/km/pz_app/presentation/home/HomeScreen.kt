@@ -71,6 +71,7 @@ import com.km.pz_app.presentation.components.RaspberryPiSelector
 import com.km.pz_app.presentation.components.Tile
 import com.km.pz_app.presentation.nav.Destination
 import com.km.pz_app.presentation.utils.Resource
+import com.km.pz_app.presentation.utils.showToast
 import com.km.pz_app.ui.theme.PZAPPTheme
 import com.km.pz_app.ui.theme.background
 import com.km.pz_app.ui.theme.backgroundBadgeDisabled
@@ -182,20 +183,7 @@ private fun Content(
 
             TemperatureChart(state)
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                RAMTile(
-                    usedRamPercent = state.usedRamPercent,
-                    usedRamGb = state.usedRamGb,
-                    modifier = Modifier.weight(1f)
-                )
-                CPUTile(
-                    systemPercent = state.cpuPercentUsed,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            UpperTiles(state)
             state.processes.getResultOrNull()?.let {
                 ProcessesTile(
                     processes = it.processes.toPersistentList(),
@@ -219,6 +207,24 @@ private fun Content(
                 contentDescription = "Akcja FAB"
             )
         }
+    }
+}
+
+@Composable
+private fun UpperTiles(state: HomeState) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(space = 16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        RAMTile(
+            usedRamPercent = state.usedRamPercent,
+            usedRamGb = state.usedRamGb,
+            modifier = Modifier.weight(1f)
+        )
+        CPUTile(
+            systemPercent = state.cpuPercentUsed,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -254,12 +260,12 @@ private fun HandleProcessKillResult(
             when (it) {
                 HomeEffect.KillProcessFailure -> showToast(
                     context = context,
-                    text = "Process killing failed!"
+                    text = "Ubicie procesu nie udało się!"
                 )
 
                 HomeEffect.KillProcessSuccess -> showToast(
                     context = context,
-                    text = "Process killed!"
+                    text = "Proces ubity!"
                 )
             }
         }
@@ -329,7 +335,7 @@ private fun ProcessInfo(
         Badge(
             content = {
                 Text(
-                    text = if (isMarkedForKill) "Killing..." else info.stateDescription,
+                    text = if (isMarkedForKill) "Ubijanie..." else info.stateDescription,
                     color = badgeTextColor,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
@@ -356,19 +362,19 @@ private fun ShowDialog(
         AlertDialog(
             onDismissRequest = onCancel,
             title = {
-                Text("Confirmation")
+                Text("Potwierdzenie")
             },
             text = {
-                Text("Do you really want to kill this process?")
+                Text("Czy na pewno chcesz ubić proces?")
             },
             confirmButton = {
                 TextButton(onClick = onConfirm) {
-                    Text("Yes")
+                    Text("Tak")
                 }
             },
             dismissButton = {
                 TextButton(onClick = onCancel) {
-                    Text("Cancel")
+                    Text("Nie")
                 }
             }
         )
@@ -492,20 +498,20 @@ private fun RAMTile(
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodyLarge
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(height = 4.dp))
             Text(
                 text = usedRamGb?.let { "%.1f GB / %.1f GB".format(it.first, it.second) } ?: "-",
                 color = textWeak,
                 style = MaterialTheme.typography.bodyMedium
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(height = 16.dp))
             LinearProgressIndicator(
                 color = animatedRamProgress.progressColor(),
                 trackColor = backgroundTertiary,
                 strokeCap = StrokeCap.Round,
                 progress = { animatedRamProgress }
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(height = 4.dp))
             Text(
                 text = usedRamPercent?.let { "%.0f%%".format(it) } ?: "-",
                 color = textWeak,
@@ -590,15 +596,17 @@ private fun TemperatureTypeSelector(
     modifier: Modifier = Modifier,
 ) {
     val types = listOf(TemperatureType.Internal, TemperatureType.External)
+    val shape = RoundedCornerShape(percent = 50)
 
     Row(
         modifier = modifier
             .background(
                 color = backgroundTertiary,
-                shape = RoundedCornerShape(50)
+                shape = shape
             )
             .padding(all = 4.dp)
     ) {
+
         types.forEach { type ->
             val isSelected = type == selected
             val animatedBackgroundColor by animateColorAsState(
@@ -611,10 +619,10 @@ private fun TemperatureTypeSelector(
             Text(
                 text = type.label,
                 modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(50))
+                    .weight(weight = 1f)
+                    .clip(shape)
                     .clickable { onSelect(type) }
-                    .background(animatedBackgroundColor)
+                    .background(color = animatedBackgroundColor)
                     .padding(vertical = 8.dp),
                 textAlign = TextAlign.Center,
                 color = textColor,
@@ -628,10 +636,6 @@ private fun TemperatureTypeSelector(
 private enum class TemperatureType(val label: String) {
     Internal("Internal"),
     External("External")
-}
-
-private fun showToast(context: Context, text: String) {
-    Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
 }
 
 private fun ProcessInfo.getBadgeColorAndText() = when (this.stateDescription) {
