@@ -3,12 +3,12 @@ package com.km.pz_app.presentation.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.km.pz_app.data.dataProvider.RaspberryAddressProvider
 import com.km.pz_app.data.repository.FakeSystemRepository
 import com.km.pz_app.data.repository.SelectedRaspberryRepository
 import com.km.pz_app.domain.model.CpuResponse
 import com.km.pz_app.domain.model.CpuStats
 import com.km.pz_app.domain.model.MemoryResponse
-import com.km.pz_app.domain.repository.ISystemRepository
 import com.km.pz_app.presentation.nav.Destination
 import com.km.pz_app.presentation.nav.navigator.INavigator
 import com.km.pz_app.presentation.utils.Resource
@@ -32,6 +32,7 @@ class HomeViewModel @Inject constructor(
 //    private val repository: ISystemRepository,
     private val navigator: INavigator,
     private val raspberryRepository: SelectedRaspberryRepository,
+    private val raspberryAddressProvider: RaspberryAddressProvider,
 ) : ViewModel() {
 
     private val repository = FakeSystemRepository()
@@ -41,6 +42,9 @@ class HomeViewModel @Inject constructor(
             memory = Resource.Loading,
             processes = Resource.Loading,
             killingProcesses = emptySet(),
+            raspberrysCount = raspberryAddressProvider.getCount(),
+            newIpInputValue = "",
+            ipError = false,
         )
     )
     val state = _state.asStateFlow()
@@ -58,6 +62,8 @@ class HomeViewModel @Inject constructor(
             HomeEvent.RemoteTerminalClick -> navigator.pushNavigationEvent(Destination.RemoteTerminal)
             is HomeEvent.ProcessKillClick -> handleProcessKill(pid = event.pid)
             is HomeEvent.RaspberryIndexChange -> handleRaspberryIndexChange(index = event.index)
+            is HomeEvent.AddIpClick -> handleAddIpClick(ip = event.ip)
+            is HomeEvent.InputValueChange -> handleInputValueChange(newValue = event.newValue)
         }
     }
 
@@ -210,6 +216,47 @@ class HomeViewModel @Inject constructor(
     private fun handleRaspberryIndexChange(index: Int) {
         viewModelScope.launch {
             raspberryRepository.setSelectedIndex(index)
+        }
+    }
+
+    private fun handleAddIpClick(ip: String) {
+        raspberryAddressProvider.addIp(ip)
+        _state.update {
+            it.copy(
+                raspberrysCount = raspberryAddressProvider.getCount(),
+                ipError = false,
+                newIpInputValue = ""
+            )
+        }
+    }
+
+    private fun handleInputValueChange(newValue: String) {
+        val cleaned = newValue.filter { it.isDigit() || it == '.' }
+
+        if (!ipPartialRegex.matches(cleaned)) {
+            return
+        }
+
+        val isValid = isFullIpValid(cleaned)
+
+        _state.update {
+            it.copy(
+                newIpInputValue = newValue,
+                ipError = !isValid
+            )
+        }
+    }
+
+    private val ipPartialRegex = Regex("""^(\d{1,3}(\.\d{0,3}){0,3})?$""")
+
+    private fun isFullIpValid(value: String): Boolean {
+        val parts = value.split(".")
+        if (parts.size != 4) return false
+
+        return parts.all { part ->
+            if (part.isEmpty() || part.length > 3) return false
+            val number = part.toIntOrNull() ?: return false
+            number in 0..255
         }
     }
 

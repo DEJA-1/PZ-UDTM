@@ -47,8 +47,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import com.km.pz_app.presentation.components.Input
 import com.km.pz_app.presentation.components.RaspberryPiSelector
 import com.km.pz_app.presentation.components.Tile
+import com.km.pz_app.presentation.home.HomeEvent
 import com.km.pz_app.presentation.nav.Destination
 import com.km.pz_app.presentation.utils.Resource
 import com.km.pz_app.presentation.utils.showToast
@@ -100,18 +102,21 @@ private fun RemoteTerminalScreen(
         var raspberryPiSelected by rememberSaveable { mutableIntStateOf(0) }
 
         RaspberryPiSelector(
-            count = 3,
+            count = state.raspberrysCount,
             selectedIndex = raspberryPiSelected,
             onSelect = {
                 raspberryPiSelected = it
                 onEvent(RemoteTerminalEvent.RaspberryIndexChange(it))
             },
+            onAddSubmit = {},
+            inputEnabled = false,
             modifier = Modifier.fillMaxWidth()
         )
 
         Input(
             inputValue = state.inputValue,
             enabled = state.isConnected,
+            placeholder = getPlaceholder(state.isConnected),
             onValueChange = { onEvent(RemoteTerminalEvent.InputValueChange(it)) },
             onSubmitClick = { onEvent(RemoteTerminalEvent.SubmitClick) }
         )
@@ -204,98 +209,11 @@ private fun observeEffect(
 }
 
 @Composable
-private fun Input(
-    inputValue: String,
-    enabled: Boolean,
-    onValueChange: (String) -> Unit,
-    onSubmitClick: () -> Unit,
-) {
-    val placeholder = getPlaceholder(enabled = enabled)
-
-    OutlinedTextField(
-        value = inputValue,
-        onValueChange = onValueChange,
-        label = { Text(text = placeholder) },
-        colors = getInputColors(),
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(),
-        singleLine = true,
-        readOnly = !enabled,
-        trailingIcon = {
-            AnimatedVisibility(
-                visible = inputValue.isNotBlank(),
-                enter = fadeIn() + scaleIn(initialScale = 0.9f),
-                exit = fadeOut() + scaleOut(),
-                modifier = Modifier.padding(all = 8.dp)
-            ) {
-                FilledIconButton(
-                    onClick = onSubmitClick,
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = blue,
-                        contentColor = text,
-                    ),
-                    modifier = Modifier.size(size = 40.dp),
-                    shape = CircleShape
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = "Wyślij"
-                    )
-                }
-            }
-        }
-    )
-}
-
-@Composable
 private fun getPlaceholder(enabled: Boolean) = if (enabled) {
     "Wprowadź polecenie"
 } else {
     "Poczekaj na połączenie z serwerem"
 }
-
-@Composable
-private fun getInputColors() = OutlinedTextFieldDefaults.colors().copy(
-    focusedContainerColor = backgroundSecondary,
-    unfocusedContainerColor = backgroundSecondary,
-    disabledContainerColor = backgroundSecondary.copy(alpha = 0.5f),
-    focusedTextColor = text,
-    unfocusedTextColor = text,
-    disabledTextColor = textWeak,
-    focusedPlaceholderColor = textWeak,
-    unfocusedPlaceholderColor = textWeak,
-    focusedLabelColor = blue,
-    unfocusedLabelColor = textWeak,
-    errorLabelColor = tertiary,
-    cursorColor = blue,
-    errorCursorColor = tertiary,
-    textSelectionColors = TextSelectionColors(
-        handleColor = blue,
-        backgroundColor = blue.copy(alpha = 0.25f)
-    ),
-    focusedIndicatorColor = blue,
-    unfocusedIndicatorColor = backgroundTertiary,
-    disabledIndicatorColor = backgroundTertiary.copy(alpha = 0.5f),
-    errorIndicatorColor = tertiary,
-    focusedLeadingIconColor = text,
-    unfocusedLeadingIconColor = textWeak,
-    disabledLeadingIconColor = textWeak.copy(alpha = 0.5f),
-    errorLeadingIconColor = tertiary,
-    focusedTrailingIconColor = text,
-    unfocusedTrailingIconColor = textWeak,
-    disabledTrailingIconColor = textWeak.copy(alpha = 0.5f),
-    errorTrailingIconColor = tertiary,
-    focusedPrefixColor = textWeak,
-    unfocusedPrefixColor = textWeak,
-    disabledPrefixColor = textWeak.copy(alpha = 0.5f),
-    errorPrefixColor = tertiary,
-    focusedSuffixColor = textWeak,
-    unfocusedSuffixColor = textWeak,
-    disabledSuffixColor = textWeak.copy(alpha = 0.5f),
-    errorSuffixColor = tertiary,
-)
 
 @Composable
 @Preview(showBackground = true)
@@ -307,6 +225,7 @@ private fun Preview() {
                 response = Resource.Success("avbcd"),
                 isConnecting = false,
                 isConnected = true,
+                raspberrysCount = 2,
             ),
             onEvent = {},
             effectFlow = emptyFlow()

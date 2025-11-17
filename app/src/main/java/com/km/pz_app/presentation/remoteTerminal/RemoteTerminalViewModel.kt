@@ -3,6 +3,7 @@ package com.km.pz_app.presentation.remoteTerminal
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.km.pz_app.data.dataProvider.RaspberryAddressProvider
 import com.km.pz_app.data.dataProvider.remoteTerminal.WebSocketStatus
 import com.km.pz_app.data.repository.SelectedRaspberryRepository
 import com.km.pz_app.domain.repository.IWebSocketRepository
@@ -24,6 +25,7 @@ import javax.inject.Inject
 class RemoteTerminalViewModel @Inject constructor(
     private val webSocketRepository: IWebSocketRepository,
     private val raspberryRepository: SelectedRaspberryRepository,
+    private val raspberryAddressProvider: RaspberryAddressProvider,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -32,6 +34,7 @@ class RemoteTerminalViewModel @Inject constructor(
             response = Resource.Success(""),
             isConnected = false,
             isConnecting = true,
+            raspberrysCount = raspberryAddressProvider.getCount()
         )
     )
     val state = _state.asStateFlow()

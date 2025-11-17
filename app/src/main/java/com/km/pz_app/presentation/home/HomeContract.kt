@@ -18,6 +18,9 @@ data class HomeState(
     val externalTemperature: Float? = null,
     val usedRamPercent: Float? = null,
     val usedRamGb: Pair<Float, Float>? = null,
+    val raspberrysCount: Int,
+    val newIpInputValue: String,
+    val ipError: Boolean,
 ) {
     private val resources = persistentListOf(cpu, memory, processes, externalTemperatureResource)
     val isLoading = resources.any { it is Resource.Loading }
@@ -27,7 +30,9 @@ data class HomeState(
 sealed interface HomeEvent {
     data class ProcessKillClick(val pid: Int) : HomeEvent
     data object RemoteTerminalClick : HomeEvent
-    data class RaspberryIndexChange(val index: Int): HomeEvent
+    data class RaspberryIndexChange(val index: Int) : HomeEvent
+    data class AddIpClick(val ip: String) : HomeEvent
+    data class InputValueChange(val newValue: String) : HomeEvent
 }
 
 sealed interface HomeEffect {

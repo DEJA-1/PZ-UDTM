@@ -1,7 +1,6 @@
 package com.km.pz_app.presentation.home
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -30,7 +29,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -173,8 +171,13 @@ private fun Content(
             )
 
             RaspberryPiSelector(
-                count = 3,
+                count = state.raspberrysCount,
                 selectedIndex = raspberryPiSelected,
+                showAdd = true,
+                inputValue = state.newIpInputValue,
+                isError = state.ipError,
+                onInputValueChange = { onEvent(HomeEvent.InputValueChange(it)) },
+                onAddSubmit = { onEvent(HomeEvent.AddIpClick(it)) },
                 onSelect = {
                     raspberryPiSelected = it
                     onEvent(HomeEvent.RaspberryIndexChange(it))
@@ -732,7 +735,10 @@ private fun Preview() {
                 cpuTemperature = 42.5f,
                 usedRamPercent = 25.8f,
                 usedRamGb = 1.2f to 3.7f,
-                killingProcesses = emptySet()
+                raspberrysCount = 2,
+                killingProcesses = emptySet(),
+                newIpInputValue = "",
+                ipError = false,
             ),
             onEvent = {},
             effectFlow = emptyFlow()

@@ -10,10 +10,9 @@ import javax.inject.Singleton
 class RaspberryAddressProvider @Inject constructor(
     private val repository: SelectedRaspberryRepository
 ) {
-    private val ipByIndex = listOf(
-        "192.168.100.192",
-        "192.168.100.192",
-        "192.168.100.192",
+    private val ipByIndex = mutableListOf(
+        "10.0.1.19",
+        "10.0.1.20",
     )
 
     suspend fun currentIp(): String {
@@ -26,4 +25,10 @@ class RaspberryAddressProvider @Inject constructor(
 
     suspend fun wsUrl(): String =
         "ws://${currentIp()}:3000/terminal/ws"
+
+    fun getCount(): Int {
+        return ipByIndex.size
+    }
+
+    fun addIp(ip: String) = ipByIndex.add(ip)
 }
