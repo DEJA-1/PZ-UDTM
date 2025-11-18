@@ -8,20 +8,33 @@ import com.km.pz_app.domain.model.ProcessResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Url
 
 interface SystemStatusApi {
-    @GET("/cpu")
-    suspend fun getCpuStatus(): CpuResponse
 
-    @GET("/memory")
-    suspend fun getMemoryStatus(): MemoryResponse
+    @GET
+    suspend fun getCpuStatus(
+        @Url url: String,
+    ): CpuResponse
 
-    @GET("/processes")
-    suspend fun getProcesses(): ProcessResponse
+    @GET
+    suspend fun getMemoryStatus(
+        @Url url: String,
+    ): MemoryResponse
 
-    @GET("/ext_temp")
-    suspend fun getExternalTemperature(): ExternalTemperatureResponse
+    @GET
+    suspend fun getProcesses(
+        @Url url: String,
+    ): ProcessResponse
 
-    @POST("/control/process/kill")
-    suspend fun killProcess(@Body request: KillProcessRequest): Unit
+    @GET
+    suspend fun getExternalTemperature(
+        @Url url: String,
+    ): ExternalTemperatureResponse
+
+    @POST
+    suspend fun killProcess(
+        @Url url: String,
+        @Body request: KillProcessRequest,
+    )
 }

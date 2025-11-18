@@ -8,6 +8,7 @@ import com.km.pz_app.data.repository.FakeSystemRepository
 import com.km.pz_app.data.repository.SelectedRaspberryRepository
 import com.km.pz_app.domain.model.CpuResponse
 import com.km.pz_app.domain.model.CpuStats
+import com.km.pz_app.domain.model.KillProcessRequest
 import com.km.pz_app.domain.model.MemoryResponse
 import com.km.pz_app.presentation.nav.Destination
 import com.km.pz_app.presentation.nav.navigator.INavigator
@@ -202,7 +203,7 @@ class HomeViewModel @Inject constructor(
     private fun handleProcessKill(pid: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                repository.killProcess(pid = pid)
+                repository.killProcess(request = KillProcessRequest(pid))
             }.onSuccess {
                 updateState { copy(killingProcesses = killingProcesses + pid) }
                 pushEffect(HomeEffect.KillProcessSuccess)
@@ -241,8 +242,8 @@ class HomeViewModel @Inject constructor(
 
         _state.update {
             it.copy(
-                newIpInputValue = newValue,
-                ipError = !isValid
+                newIpInputValue = cleaned,
+                ipError = cleaned.isNotEmpty() && !isValid
             )
         }
     }

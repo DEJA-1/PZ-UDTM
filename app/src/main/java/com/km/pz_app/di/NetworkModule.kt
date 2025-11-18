@@ -28,27 +28,28 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(logging: HttpLoggingInterceptor): OkHttpClient =
+    fun provideOkHttpClient(
+        logging: HttpLoggingInterceptor,
+    ): OkHttpClient =
         OkHttpClient.Builder()
-            .addInterceptor(logging)
+            .addInterceptor(interceptor = logging)
             .build()
 
     @Provides
     @Singleton
-    suspend fun provideRetrofit(
+    fun provideRetrofit(
         client: OkHttpClient,
-        addressProvider: RaspberryAddressProvider
-    ): Retrofit {
-        val baseUrl = addressProvider.httpBaseUrl()
-        return Retrofit.Builder()
-            .baseUrl(baseUrl)
+    ): Retrofit =
+        Retrofit.Builder()
+            .baseUrl("http://0.0.0.0/")
             .addConverterFactory(GsonConverterFactory.create())
             .client(client)
             .build()
-    }
 
     @Provides
     @Singleton
-    fun provideSystemStatusApi(retrofit: Retrofit): SystemStatusApi =
+    fun provideSystemStatusApi(
+        retrofit: Retrofit,
+    ): SystemStatusApi =
         retrofit.create(SystemStatusApi::class.java)
 }

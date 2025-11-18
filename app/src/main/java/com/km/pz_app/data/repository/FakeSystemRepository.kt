@@ -4,6 +4,7 @@ import com.km.pz_app.domain.model.CpuResponse
 import com.km.pz_app.domain.model.CpuStats
 import com.km.pz_app.domain.model.CpuUsage
 import com.km.pz_app.domain.model.ExternalTemperatureResponse
+import com.km.pz_app.domain.model.KillProcessRequest
 import com.km.pz_app.domain.model.MemoryResponse
 import com.km.pz_app.domain.model.ProcessInfo
 import com.km.pz_app.domain.model.ProcessResponse
@@ -97,7 +98,7 @@ class FakeSystemRepository @Inject constructor() : ISystemRepository {
         return ProcessResponse(processes = processes)
     }
 
-    override suspend fun killProcess(pid: Int) {
-        processes.removeIf { it.pid == pid }
+    override suspend fun killProcess(request: KillProcessRequest) {
+        processes.removeIf { it.pid == request.pid }
     }
 }

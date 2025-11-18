@@ -6,7 +6,7 @@ interface ITerminalWebSocketApi {
     val messages: SharedFlow<String>
     val connectivity: SharedFlow<WebSocketStatus>
 
-    fun connect()
+    fun connect(url: String)
     fun send(command: String): Boolean
     fun close(code: Int = 1000, reason: String = "Normal Closure")
 }

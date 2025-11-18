@@ -89,6 +89,20 @@ class RemoteTerminalViewModel @Inject constructor(
     private fun handleRaspberryIndexChange(index: Int) {
         viewModelScope.launch {
             raspberryRepository.setSelectedIndex(index)
+
+            webSocketRepository.terminalClose()
+
+            _state.update {
+                it.copy(
+                    response = Resource.Success(""),
+                    isConnected = false,
+                    isConnecting = true
+                )
+            }
+
+            withContext(Dispatchers.IO) {
+                webSocketRepository.terminalConnect()
+            }
         }
     }
 

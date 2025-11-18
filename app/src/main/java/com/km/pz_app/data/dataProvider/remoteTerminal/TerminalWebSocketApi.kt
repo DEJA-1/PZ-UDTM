@@ -15,7 +15,6 @@ import javax.inject.Singleton
 @Singleton
 class TerminalWebSocketApi @Inject constructor(
     private val okHttp: OkHttpClient,
-    private val addressProvider: RaspberryAddressProvider
 ) : ITerminalWebSocketApi {
     private var ws: WebSocket? = null
 
@@ -27,40 +26,37 @@ class TerminalWebSocketApi @Inject constructor(
     )
     override val connectivity: SharedFlow<WebSocketStatus> = _connectivity
 
-    override fun connect() {
-        if (ws != null) return
+    override fun connect(url: String) {
+        ws?.cancel()
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val url = addressProvider.wsUrl()
+        val request = Request.Builder()
+            .url(url = url)
+            .build()
 
-            val request = Request.Builder()
-                .url(url)
-                .build()
-            ws = okHttp.newWebSocket(request, object : WebSocketListener() {
-                override fun onOpen(webSocket: WebSocket, response: Response) {
-                    _connectivity.tryEmit(WebSocketStatus.Open)
-                }
-
-                override fun onMessage(webSocket: WebSocket, text: String) {
-                    _messages.tryEmit(text)
-                }
-
-                override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                    _messages.tryEmit(bytes.utf8())
-                }
-
-                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    _connectivity.tryEmit(WebSocketStatus.Closed(code, reason))
-                    ws = null
-                }
-
-                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    _connectivity.tryEmit(WebSocketStatus.Failure(t.message))
-                    ws = null
-                }
+        ws = okHttp.newWebSocket(request, object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                _connectivity.tryEmit(WebSocketStatus.Open)
             }
-            )
+
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                _messages.tryEmit(text)
+            }
+
+            override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+                _messages.tryEmit(bytes.utf8())
+            }
+
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                _connectivity.tryEmit(WebSocketStatus.Closed(code, reason))
+                ws = null
+            }
+
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                _connectivity.tryEmit(WebSocketStatus.Failure(t.message))
+                ws = null
+            }
         }
+        )
     }
 
     override fun send(command: String): Boolean = ws?.send(command) ?: false
