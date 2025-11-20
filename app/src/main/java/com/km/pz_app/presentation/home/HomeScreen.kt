@@ -106,22 +106,54 @@ private fun HomeScreen(
     onEvent: (HomeEvent) -> Unit,
 ) {
     Column(
-        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
             .background(color = background)
     ) {
-        when {
-            state.isLoading -> CircularProgressIndicator(
-                color = text
-            )
+        var raspberryPiSelected by rememberSaveable { mutableIntStateOf(0) }
 
-            state.isError -> Text(
-                text = "Coś poszło nie tak",
-                color = text,
-                fontWeight = FontWeight.Bold
-            )
+        RaspberryPiSelector(
+            count = state.raspberrysCount,
+            selectedIndex = raspberryPiSelected,
+            showAdd = true,
+            inputValue = state.newIpInputValue,
+            isError = state.ipError,
+            onInputValueChange = { onEvent(HomeEvent.InputValueChange(it)) },
+            onAddSubmit = { onEvent(HomeEvent.AddIpClick(it)) },
+            onSelect = {
+                raspberryPiSelected = it
+                onEvent(HomeEvent.RaspberryIndexChange(it))
+            },
+            modifier = Modifier
+                .align(alignment = Alignment.CenterHorizontally)
+                .padding(horizontal = 24.dp)
+                .padding(top = 48.dp, bottom = 24.dp)
+        )
+
+        when {
+            state.isLoading -> Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color = background),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(color = text)
+            }
+
+            state.isError
+                -> Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color = background),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "Coś poszło nie tak",
+                    color = text,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
             else -> Content(
                 state = state,
@@ -143,7 +175,6 @@ private fun Content(
     var killProcessDialogId: Int? by rememberSaveable {
         mutableStateOf(null)
     }
-    var raspberryPiSelected by rememberSaveable { mutableIntStateOf(0) }
 
     HandleProcessKillResult(
         effectFlow = effectFlow,
@@ -154,8 +185,8 @@ private fun Content(
         Column(
             verticalArrangement = Arrangement.spacedBy(space = 16.dp),
             modifier = modifier
-                .padding(horizontal = 24.dp, vertical = 48.dp)
-                .padding(bottom = 16.dp)
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 64.dp)
                 .fillMaxSize()
                 .verticalScroll(state = rememberScrollState())
         ) {
@@ -167,20 +198,6 @@ private fun Content(
                 },
                 onCancel = {
                     killProcessDialogId = null
-                }
-            )
-
-            RaspberryPiSelector(
-                count = state.raspberrysCount,
-                selectedIndex = raspberryPiSelected,
-                showAdd = true,
-                inputValue = state.newIpInputValue,
-                isError = state.ipError,
-                onInputValueChange = { onEvent(HomeEvent.InputValueChange(it)) },
-                onAddSubmit = { onEvent(HomeEvent.AddIpClick(it)) },
-                onSelect = {
-                    raspberryPiSelected = it
-                    onEvent(HomeEvent.RaspberryIndexChange(it))
                 }
             )
 

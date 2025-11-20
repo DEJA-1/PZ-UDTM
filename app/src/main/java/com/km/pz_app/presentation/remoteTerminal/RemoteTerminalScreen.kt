@@ -1,12 +1,6 @@
 package com.km.pz_app.presentation.remoteTerminal
 
 import android.content.Context
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,20 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,18 +33,12 @@ import androidx.navigation.compose.composable
 import com.km.pz_app.presentation.components.Input
 import com.km.pz_app.presentation.components.RaspberryPiSelector
 import com.km.pz_app.presentation.components.Tile
-import com.km.pz_app.presentation.home.HomeEvent
 import com.km.pz_app.presentation.nav.Destination
 import com.km.pz_app.presentation.utils.Resource
 import com.km.pz_app.presentation.utils.showToast
 import com.km.pz_app.ui.theme.PZAPPTheme
 import com.km.pz_app.ui.theme.background
-import com.km.pz_app.ui.theme.backgroundSecondary
-import com.km.pz_app.ui.theme.backgroundTertiary
-import com.km.pz_app.ui.theme.blue
-import com.km.pz_app.ui.theme.tertiary
 import com.km.pz_app.ui.theme.text
-import com.km.pz_app.ui.theme.textWeak
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
@@ -98,6 +75,7 @@ private fun RemoteTerminalScreen(
             .fillMaxSize()
             .background(color = background)
             .padding(horizontal = 24.dp, vertical = 48.dp)
+            .padding(bottom = 24.dp),
     ) {
         var raspberryPiSelected by rememberSaveable { mutableIntStateOf(0) }
 

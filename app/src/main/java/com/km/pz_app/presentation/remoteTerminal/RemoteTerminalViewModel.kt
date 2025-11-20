@@ -1,6 +1,5 @@
 package com.km.pz_app.presentation.remoteTerminal
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.km.pz_app.data.dataProvider.RaspberryAddressProvider
@@ -10,10 +9,10 @@ import com.km.pz_app.domain.repository.IWebSocketRepository
 import com.km.pz_app.presentation.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -42,8 +41,10 @@ class RemoteTerminalViewModel @Inject constructor(
     private val effectChannel: Channel<RemoteTerminalEffect> = Channel(Channel.BUFFERED)
     val effectFlow = effectChannel.receiveAsFlow()
 
+    private var connectJob: Job? = null
+
     init {
-        connectWebSocket()
+        startConnection()
         observeWebSocket()
     }
 
@@ -55,9 +56,26 @@ class RemoteTerminalViewModel @Inject constructor(
         }
     }
 
-    private fun connectWebSocket() {
-        viewModelScope.launch(Dispatchers.IO) {
-            webSocketRepository.terminalConnect()
+    private fun startConnection() {
+        connectJob?.cancel()
+
+        _state.update {
+            it.copy(
+                isConnected = false,
+                isConnecting = true,
+                response = Resource.Success("")
+            )
+        }
+
+        connectJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                webSocketRepository.terminalClose()
+            } catch (_: Exception) {
+            }
+
+            val url = raspberryAddressProvider.wsUrl()
+
+            webSocketRepository.terminalConnect(url = url)
         }
     }
 
@@ -81,6 +99,9 @@ class RemoteTerminalViewModel @Inject constructor(
             if (!sentSuccessfully) {
                 withContext(Dispatchers.Main.immediate) {
                     effectChannel.trySend(RemoteTerminalEffect.ShowToast("Brak połączenia"))
+                    _state.update { current ->
+                        current.copy(response = Resource.Error("Brak połączenia"))
+                    }
                 }
             }
         }
@@ -89,20 +110,7 @@ class RemoteTerminalViewModel @Inject constructor(
     private fun handleRaspberryIndexChange(index: Int) {
         viewModelScope.launch {
             raspberryRepository.setSelectedIndex(index)
-
-            webSocketRepository.terminalClose()
-
-            _state.update {
-                it.copy(
-                    response = Resource.Success(""),
-                    isConnected = false,
-                    isConnecting = true
-                )
-            }
-
-            withContext(Dispatchers.IO) {
-                webSocketRepository.terminalConnect()
-            }
+            startConnection()
         }
     }
 
@@ -131,7 +139,6 @@ class RemoteTerminalViewModel @Inject constructor(
     private fun observeConnectivity() {
         viewModelScope.launch {
             webSocketRepository.terminalConnectivity
-                .distinctUntilChanged()
                 .collect { status ->
                     when (status) {
                         WebSocketStatus.Open -> handleOpenStatus()
@@ -160,7 +167,6 @@ class RemoteTerminalViewModel @Inject constructor(
                 isConnecting = false
             )
         }
-        Log.w("Error", status.message.toString())
     }
 
     private fun sanitizeAnsi(input: String?): String {
@@ -183,6 +189,7 @@ class RemoteTerminalViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        connectJob?.cancel()
         webSocketRepository.terminalClose()
     }
 }

@@ -12,7 +12,6 @@ class RaspberryAddressProvider @Inject constructor(
 ) {
     private val ipByIndex = mutableListOf(
         "10.0.1.19",
-        "10.0.1.20",
     )
 
     suspend fun currentIp(): String {

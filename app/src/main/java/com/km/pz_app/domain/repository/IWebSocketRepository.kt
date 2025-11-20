@@ -6,7 +6,8 @@ import kotlinx.coroutines.flow.SharedFlow
 interface IWebSocketRepository {
     val terminalMessages: SharedFlow<String>
     val terminalConnectivity: SharedFlow<WebSocketStatus>
-    suspend fun terminalConnect()
-    suspend fun terminalSend(command: String): Boolean
+
+    suspend fun terminalConnect(url: String)
+    fun terminalSend(command: String): Boolean
     fun terminalClose()
 }

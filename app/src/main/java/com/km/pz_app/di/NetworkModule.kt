@@ -1,10 +1,6 @@
 package com.km.pz_app.di
 
-import com.km.pz_app.data.dataProvider.RaspberryAddressProvider
 import com.km.pz_app.data.dataProvider.SystemStatusApi
-import com.km.pz_app.data.dataProvider.remoteTerminal.ITerminalWebSocketApi
-import com.km.pz_app.data.dataProvider.remoteTerminal.TerminalWebSocketApi
-import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,6 +9,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -33,6 +30,7 @@ object NetworkModule {
     ): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(interceptor = logging)
+            .pingInterval(15, TimeUnit.SECONDS)
             .build()
 
     @Provides
